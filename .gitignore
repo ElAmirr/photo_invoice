@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-electron
+.env
+backend/data/database.sqlite
+backend/schema_snapshot.txt*
+frontend/dist
+.DS_Store
+*.log
+破

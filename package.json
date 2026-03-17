@@ -1,0 +1,43 @@
+{
+    "name": "photo-studio-management",
+    "version": "1.0.0",
+    "description": "Photo Studio Management System",
+    "main": "electron/main.js",
+    "scripts": {
+        "frontend:dev": "npm --prefix frontend run dev",
+        "backend:dev": "npm --prefix backend run dev",
+        "dev": "concurrently \"npm run backend:dev\" \"wait-on http://localhost:5000 \u0026\u0026 npm run frontend:dev\" \"wait-on http://localhost:5173 \u0026\u0026 electron .\"",
+        "build": "npm --prefix frontend run build \u0026\u0026 electron-builder",
+        "postinstall": "npm install --prefix frontend \u0026\u0026 npm install --prefix backend"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "build": {
+        "appId": "com.photostudio.management",
+        "productName": "Photo Studio Management",
+        "directories": {
+            "output": "dist-electron"
+        },
+        "files": [
+            "dist/**/*",
+            "electron/**/*",
+            "backend/**/*",
+            "frontend/dist/**/*",
+            "package.json"
+        ],
+        "mac": {
+            "category": "public.app-category.business",
+            "target": [
+                "dmg",
+                "zip"
+            ]
+        }
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2",
+        "electron": "^34.3.0",
+        "electron-builder": "^25.1.8",
+        "wait-on": "^8.0.2"
+    }
+}
