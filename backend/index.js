@@ -7,7 +7,15 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const uploadsDir = process.env.ELECTRON_USER_DATA
+    ? path.join(process.env.ELECTRON_USER_DATA, 'uploads')
+    : path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/api/company', require('./routes/company'));

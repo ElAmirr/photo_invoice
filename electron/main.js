@@ -9,11 +9,16 @@ let backendProcess;
 
 function startBackend() {
     const backendPath = path.join(__dirname, '..', 'backend', 'index.js');
+    const userDataPath = app.getPath('userData');
 
-    // In development, we use the local node. 
-    // In production, we'll need to package the backend or point to the bundled binary.
+    console.log('Starting backend with userData:', userDataPath);
+
     backendProcess = spawn('node', [backendPath], {
-        env: { ...process.env, NODE_ENV: 'production' },
+        env: {
+            ...process.env,
+            NODE_ENV: 'production',
+            ELECTRON_USER_DATA: userDataPath
+        },
         stdio: 'inherit'
     });
 
