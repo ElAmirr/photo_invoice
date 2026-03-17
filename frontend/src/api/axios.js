@@ -5,5 +5,5 @@ const api = axios.create({
         ? 'http://localhost:5000/api'
         : '/api'
 });
-破
+
 export default api;

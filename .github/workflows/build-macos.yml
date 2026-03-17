@@ -33,4 +33,3 @@ jobs:
         with:
           name: photo-studio-macos
           path: dist-electron/*.dmg
-破
