@@ -6,9 +6,9 @@
     "scripts": {
         "frontend:dev": "npm --prefix frontend run dev",
         "backend:dev": "npm --prefix backend run dev",
-        "dev": "concurrently \"npm run backend:dev\" \"wait-on http://localhost:5000 \u0026\u0026 npm run frontend:dev\" \"wait-on http://localhost:5173 \u0026\u0026 electron .\"",
-        "build": "npm --prefix frontend run build \u0026\u0026 electron-builder",
-        "postinstall": "npm install --prefix frontend \u0026\u0026 npm install --prefix backend"
+        "dev": "concurrently \"npm run backend:dev\" \"wait-on http://localhost:5000 && npm run frontend:dev\" \"wait-on http://localhost:5173 && electron .\"",
+        "build": "npm --prefix frontend run build && electron-builder",
+        "postinstall": "npm install --prefix frontend && npm install --prefix backend"
     },
     "keywords": [],
     "author": "",
@@ -32,12 +32,24 @@
                 "dmg",
                 "zip"
             ]
+        },
+        "publish": {
+            "provider": "github",
+            "owner": "ElAmirr",
+            "repo": "photo_invoice"
         }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ElAmirr/photo_invoice.git"
     },
     "devDependencies": {
         "concurrently": "^9.1.2",
         "electron": "^34.3.0",
         "electron-builder": "^25.1.8",
         "wait-on": "^8.0.2"
+    },
+    "dependencies": {
+        "electron-updater": "^6.8.3"
     }
 }
