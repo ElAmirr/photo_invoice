@@ -1,7 +1,6 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, utilityProcess } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
-const { spawn } = require('child_process');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
@@ -13,7 +12,7 @@ function startBackend() {
 
     console.log('Starting backend with userData:', userDataPath);
 
-    backendProcess = spawn('node', [backendPath], {
+    backendProcess = utilityProcess.fork(backendPath, [], {
         env: {
             ...process.env,
             NODE_ENV: 'production',
@@ -22,8 +21,8 @@ function startBackend() {
         stdio: 'inherit'
     });
 
-    backendProcess.on('error', (err) => {
-        console.error('Failed to start backend:', err);
+    backendProcess.on('spawn', () => {
+        console.log('Backend process spawned successfully');
     });
 
     backendProcess.on('exit', (code) => {
