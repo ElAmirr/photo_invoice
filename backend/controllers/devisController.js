@@ -164,7 +164,7 @@ exports.convertToFacture = async (req, res) => {
             );
         }
 
-        await conn.query('UPDATE devis SET status="accepted" WHERE id=?', [req.params.id]);
+        await conn.query('UPDATE devis SET status=\'accepted\' WHERE id=?', [req.params.id]);
         await conn.commit();
 
         const [newFac] = await conn.query('SELECT * FROM factures WHERE id=?', [factureId]);

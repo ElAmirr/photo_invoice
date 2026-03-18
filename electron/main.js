@@ -25,6 +25,29 @@ function startBackend() {
         console.log('Backend process spawned successfully');
     });
 
+    backendProcess.on('message', async (message) => {
+        if (message.type === 'GENERATE_PDF') {
+            const { html, requestId } = message;
+            try {
+                const pdfWindow = new BrowserWindow({
+                    show: false,
+                    webPreferences: { offscreen: true }
+                });
+                await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+                const pdf = await pdfWindow.webContents.printToPDF({
+                    printBackground: true,
+                    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+                    pageSize: 'A4'
+                });
+                pdfWindow.close();
+                backendProcess.postMessage({ type: 'PDF_RESULT', requestId, pdf });
+            } catch (err) {
+                console.error('PDF Generation Error in Main:', err);
+                backendProcess.postMessage({ type: 'PDF_RESULT', requestId, error: err.message });
+            }
+        }
+    });
+
     backendProcess.on('exit', (code) => {
         console.log(`Backend process exited with code ${code}`);
     });

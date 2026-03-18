@@ -1,7 +1,43 @@
 const pool = require('../db/connection');
-const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+
+const pdfRequests = new Map();
+
+// Listen for PDF results from the main process
+if (process.parentPort) {
+  process.parentPort.on('message', (message) => {
+    if (message.data && message.data.type === 'PDF_RESULT') {
+      const { requestId, pdf, error } = message.data;
+      const callback = pdfRequests.get(requestId);
+      if (callback) {
+        if (error) callback.reject(new Error(error));
+        else callback.resolve(Buffer.from(pdf));
+        pdfRequests.delete(requestId);
+      }
+    }
+  });
+}
+
+function generatePdfViaMain(html) {
+  return new Promise((resolve, reject) => {
+    if (!process.parentPort) {
+      return reject(new Error('Process not running as a utility process with parentPort'));
+    }
+    const requestId = uuidv4();
+    pdfRequests.set(requestId, { resolve, reject });
+    process.parentPort.postMessage({ type: 'GENERATE_PDF', html, requestId });
+
+    // Timeout after 30 seconds
+    setTimeout(() => {
+      if (pdfRequests.has(requestId)) {
+        pdfRequests.delete(requestId);
+        reject(new Error('PDF generation timeout'));
+      }
+    }, 30000);
+  });
+}
 
 function formatDate(d) {
   if (!d) return '';
@@ -152,11 +188,7 @@ exports.generateDevisPdf = async (req, res) => {
     const company = co[0] || {};
 
     const html = buildHtml('devis', { doc, client, items, company });
-    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4', margin: { top: '0', right: '0', bottom: '0', left: '0' } });
-    await browser.close();
+    const pdf = await generatePdfViaMain(html);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="devis-${doc.reference}.pdf"`);
@@ -179,11 +211,7 @@ exports.generateFacturePdf = async (req, res) => {
     const company = co[0] || {};
 
     const html = buildHtml('facture', { doc, client, items, company });
-    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4', margin: { top: '0', right: '0', bottom: '0', left: '0' } });
-    await browser.close();
+    const pdf = await generatePdfViaMain(html);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="facture-${doc.reference}.pdf"`);
