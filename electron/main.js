@@ -80,6 +80,11 @@ function createWindow() {
 function checkUpdates() {
     autoUpdater.checkForUpdatesAndNotify();
 
+    // Check for updates every 15 minutes
+    setInterval(() => {
+        autoUpdater.checkForUpdatesAndNotify();
+    }, 15 * 60 * 1000);
+
     autoUpdater.on('update-available', () => {
         dialog.showMessageBox({
             type: 'info',

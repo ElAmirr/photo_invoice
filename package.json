@@ -1,6 +1,6 @@
 {
     "name": "photo-studio-management",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Photo Studio Management System",
     "main": "electron/main.js",
     "scripts": {

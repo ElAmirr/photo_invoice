@@ -52,7 +52,7 @@ function buildHtml(type, data) {
   const { doc, client, items, company } = data;
   const logoHtml = company.logo
     ? `<img src="http://127.0.0.1:5055${company.logo}" style="height:70px;object-fit:contain;" />`
-    : `<div style="font-size:24px;font-weight:700;color:#6C63FF;">${company.name || 'Studio Photo'}</div>`;
+    : `<div></div>`;
 
   const itemRows = items.map((item, i) => `
     <tr>
@@ -101,10 +101,10 @@ function buildHtml(type, data) {
     tbody tr:nth-child(even) { background:#f8f9ff; }
     tbody td { padding:9px 12px; font-size:12px; }
     .totals { display:flex; justify-content:flex-end; margin-top:10px; }
-    .totals-box { background:#1a1a2e; color:white; border-radius:8px; padding:20px; min-width:240px; }
+    .totals-box { background: linear-gradient(135deg, #6C63FF 0%, #4338ca 100%); color:white; border-radius:8px; padding:20px; min-width:240px; }
     .totals-box .row { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
     .totals-box .total-line { display:flex; justify-content:space-between; font-size:16px; font-weight:700;
-      color:#a78bfa; border-top:1px solid #333; padding-top:10px; margin-top:6px; }
+      color:white; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px; margin-top:6px; }
     .footer { margin-top:50px; text-align:center; font-size:10px; color:#aaa; }
     ${isDevis ? `.valid-until { font-size:12px; color:#888; margin-top:4px; }` : ''}
   </style>
