@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.PROD
-        ? 'http://localhost:5001/api'
+        ? 'http://127.0.0.1:5055/api'
         : '/api'
 });
 

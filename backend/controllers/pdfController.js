@@ -15,7 +15,7 @@ function formatCurrency(n) {
 function buildHtml(type, data) {
   const { doc, client, items, company } = data;
   const logoHtml = company.logo
-    ? `<img src="http://localhost:5001${company.logo}" style="height:70px;object-fit:contain;" />`
+    ? `<img src="http://127.0.0.1:5055${company.logo}" style="height:70px;object-fit:contain;" />`
     : `<div style="font-size:24px;font-weight:700;color:#6C63FF;">${company.name || 'Studio Photo'}</div>`;
 
   const itemRows = items.map((item, i) => `
