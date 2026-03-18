@@ -6,7 +6,7 @@
     "scripts": {
         "frontend:dev": "npm --prefix frontend run dev",
         "backend:dev": "npm --prefix backend run dev",
-        "dev": "concurrently \"npm run backend:dev\" \"wait-on http://localhost:5000 && npm run frontend:dev\" \"wait-on http://localhost:5173 && electron .\"",
+        "dev": "concurrently \"npm run backend:dev\" \"wait-on http://localhost:5001 && npm run frontend:dev\" \"wait-on http://localhost:5173 && electron .\"",
         "build": "npm --prefix frontend run build && electron-builder",
         "postinstall": "npm install --prefix frontend && npm install --prefix backend"
     },

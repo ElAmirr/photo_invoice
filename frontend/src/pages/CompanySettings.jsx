@@ -82,7 +82,7 @@ const CompanySettings = () => {
                         backgroundColor: '#f8fafc'
                     }}>
                         {preview ? (
-                            <img src={preview.startsWith('blob') ? preview : `http://localhost:5000${preview}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            <img src={preview.startsWith('blob') ? preview : `http://localhost:5001${preview}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Upload size={32} color="#94a3b8" />
                         )}
