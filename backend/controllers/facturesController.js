@@ -48,13 +48,15 @@ exports.create = async (req, res) => {
         const company = co[0] || {};
 
         const reference = await generateFactureRef();
-        const total_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const tax_amount = subtotal_amount * 0.19;
+        const total_amount = subtotal_amount + tax_amount;
 
         console.log('INSERT FACTURE:', reference);
         const [result] = await conn.query(
-            `INSERT INTO factures (client_id, reference, date, status, total_amount, shooting_id)
-       VALUES (?,?,?,?,?,?)`,
-            [client_id, reference, date, status || 'unpaid', total_amount, shooting_id || null]
+            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
+       VALUES (?,?,?,?,?,?,?,?)`,
+            [client_id, reference, date, status || 'unpaid', subtotal_amount, tax_amount, total_amount, shooting_id || null]
         );
         const factureId = result.insertId;
 
@@ -82,11 +84,13 @@ exports.update = async (req, res) => {
     try {
         await conn.beginTransaction();
         const { client_id, date, status, shooting_id, items } = req.body;
-        const total_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const tax_amount = subtotal_amount * 0.19;
+        const total_amount = subtotal_amount + tax_amount;
 
         await conn.query(
-            'UPDATE factures SET client_id=?, date=?, status=?, shooting_id=?, total_amount=? WHERE id=?',
-            [client_id, date, status, shooting_id || null, total_amount, req.params.id]
+            'UPDATE factures SET client_id=?, date=?, status=?, shooting_id=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
+            [client_id, date, status, shooting_id || null, subtotal_amount, tax_amount, total_amount, req.params.id]
         );
 
         await conn.query("DELETE FROM invoice_items WHERE type='facture' AND parent_id=?", [req.params.id]);

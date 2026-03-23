@@ -151,23 +151,17 @@ const Factures = () => {
                             <th>Référence</th>
                             <th>Client</th>
                             <th>Date</th>
-                            <th style={{ textAlign: 'right' }}>Montant Total</th>
-                            <th>Status</th>
+                            <th style={{ textAlign: 'right' }}>Montant Total (TTC)</th>
                             <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filtered.map(f => (
                             <tr key={f.id}>
-                                <td>{f.client_id}</td>
+                                <td>{f.reference}</td>
                                 <td>{f.client_name}</td>
                                 <td>{f.date ? format(new Date(f.date), 'dd/MM/yyyy') : '-'}</td>
                                 <td style={{ textAlign: 'right', fontWeight: '700' }}>{Number(f.total_amount || 0).toFixed(3)} DT</td>
-                                <td>
-                                    <span className={`badge badge-${f.status}`}>
-                                        {f.status === 'paid' ? 'Payée' : f.status === 'partial' ? 'Partielle' : 'Impayée'}
-                                    </span>
-                                </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                         <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
@@ -210,14 +204,6 @@ const Factures = () => {
                             <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Status</label>
-                            <select style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                <option value="unpaid">Impayée</option>
-                                <option value="paid">Payée</option>
-                                <option value="partial">Partielle</option>
-                            </select>
-                        </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>

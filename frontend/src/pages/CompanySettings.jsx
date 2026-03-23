@@ -127,7 +127,7 @@ const CompanySettings = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600' }}>Patente</label>
+                    <label style={{ fontSize: '14px', fontWeight: '600' }}>RIB (compte bancaire)</label>
                     <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
                         name="patente" value={form.patente} onChange={handleChange} />
                 </div>

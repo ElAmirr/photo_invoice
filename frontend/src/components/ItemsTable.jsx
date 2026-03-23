@@ -26,7 +26,9 @@ const ItemsTable = ({ items, setItems }) => {
         setItems(newItems);
     };
 
-    const total = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const subtotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const tax = subtotal * 0.19;
+    const total = subtotal + tax;
 
     return (
         <div style={{ marginTop: '20px' }}>
@@ -96,11 +98,15 @@ const ItemsTable = ({ items, setItems }) => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                 <div className="card" style={{ minWidth: '240px', backgroundColor: 'var(--secondary)', color: 'white', padding: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
-                        <span>Total Hors Taxe</span>
-                        <span>{Number(total || 0).toFixed(3)} DT</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                        <span>Total HT</span>
+                        <span>{Number(subtotal || 0).toFixed(3)} DT</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '700', color: 'var(--primary-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                        <span>TVA (19%)</span>
+                        <span>{Number(tax || 0).toFixed(3)} DT</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', color: 'var(--primary-light)' }}>
                         <span>TOTAL TTC</span>
                         <span>{Number(total || 0).toFixed(3)} DT</span>
                     </div>

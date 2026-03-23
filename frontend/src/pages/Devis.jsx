@@ -106,13 +106,14 @@ const Devis = () => {
     };
 
     const convertToFacture = async (id) => {
-        if (window.confirm('Convertir ce devis en facture ?')) {
+        if (window.confirm('Voulez-vous vraiment convertir ce devis en facture finale ? Cette action est irréversible.')) {
             try {
                 await api.post(`/devis/${id}/convert`);
-                alert('Facture générée avec succès !');
+                alert('✅ Facture générée avec succès ! Retrouvez-la dans la section Factures.');
                 fetchData();
             } catch (err) {
                 console.error(err);
+                alert('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message));
             }
         }
     };
@@ -186,15 +187,36 @@ const Devis = () => {
                                     </span>
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                        {!d.facture_id ? (
+                                            <button
+                                                onClick={() => convertToFacture(d.id)}
+                                                className="btn"
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    backgroundColor: '#10b981',
+                                                    color: 'white',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    border: 'none',
+                                                    borderRadius: '6px'
+                                                }}
+                                                title="Convertir en facture"
+                                            >
+                                                <RefreshCw size={14} /> <span>Convertir</span>
+                                            </button>
+                                        ) : (
+                                            <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#ecfdf5', padding: '4px 8px', borderRadius: '4px' }}>
+                                                <CheckCircle size={12} /> Converti
+                                            </span>
+                                        )}
+                                        <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--border)', margin: '0 4px' }}></div>
                                         <button onClick={() => downloadPdf(d.id, d.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
                                             <FileDown size={16} />
                                         </button>
-                                        {d.status !== 'accepted' && (
-                                            <button onClick={() => convertToFacture(d.id)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Convertir en facture">
-                                                <RefreshCw size={16} />
-                                            </button>
-                                        )}
                                         <button onClick={() => handleOpen(d)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
                                             <Edit size={16} />
                                         </button>

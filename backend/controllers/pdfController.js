@@ -20,6 +20,25 @@ if (process.parentPort) {
   });
 }
 
+async function generatePdf(html) {
+  if (process.parentPort) {
+    return await generatePdfViaMain(html);
+  } else {
+    // Standalone mode - use Puppeteer if available
+    try {
+      const puppeteer = require('puppeteer');
+      const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdf = await page.pdf({ format: 'A4', printBackground: true });
+      await browser.close();
+      return pdf;
+    } catch (err) {
+      throw new Error('PDF generation failed: Standalone mode requires puppeteer installed in backend. ' + err.message);
+    }
+  }
+}
+
 function generatePdfViaMain(html) {
   return new Promise((resolve, reject) => {
     if (!process.parentPort) {
@@ -41,7 +60,8 @@ function generatePdfViaMain(html) {
 
 function formatDate(d) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('fr-TN', { year: 'numeric', month: 'long', day: 'numeric' });
+  // Format as "23 Mars 2026"
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function formatCurrency(n) {
@@ -116,7 +136,7 @@ function buildHtml(type, data) {
       <div class="ref">${refLabel} ${doc.reference}</div>
       <div class="date">Date: ${formatDate(doc.date)}</div>
       ${isDevis ? `<div class="valid-until">Valide jusqu'au: ${formatDate(doc.valid_until)}</div>` : ''}
-      <div class="status-badge">${statusLabel}</div>
+      ${isDevis ? `<div class="status-badge">${statusLabel}</div>` : ''}
     </div>
   </div>
 
@@ -130,7 +150,7 @@ function buildHtml(type, data) {
         <p>${company.address || ''}</p>
         <p>${company.phone || ''} | ${company.email || ''}</p>
         ${company.matricule_fiscale ? `<p>MF: ${company.matricule_fiscale}</p>` : ''}
-        ${company.patente ? `<p>Patente: ${company.patente}</p>` : ''}
+        ${company.patente ? `<p>RIB: ${company.patente}</p>` : ''}
       </div>
     </div>
     <div style="flex:1;">
@@ -160,6 +180,14 @@ function buildHtml(type, data) {
 
   <div class="totals">
     <div class="totals-box">
+      <div class="row">
+        <span>Total HT</span>
+        <span>${formatCurrency(doc.subtotal_amount || doc.total_amount)}</span>
+      </div>
+      <div class="row">
+        <span>TVA (19%)</span>
+        <span>${formatCurrency(doc.tax_amount || 0)}</span>
+      </div>
       <div class="total-line">
         <span>TOTAL TTC</span>
         <span>${formatCurrency(doc.total_amount)}</span>
@@ -188,7 +216,7 @@ exports.generateDevisPdf = async (req, res) => {
     const company = co[0] || {};
 
     const html = buildHtml('devis', { doc, client, items, company });
-    const pdf = await generatePdfViaMain(html);
+    const pdf = await generatePdf(html);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="devis-${doc.reference}.pdf"`);
@@ -211,7 +239,7 @@ exports.generateFacturePdf = async (req, res) => {
     const company = co[0] || {};
 
     const html = buildHtml('facture', { doc, client, items, company });
-    const pdf = await generatePdfViaMain(html);
+    const pdf = await generatePdf(html);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="facture-${doc.reference}.pdf"`);

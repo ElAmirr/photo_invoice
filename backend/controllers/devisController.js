@@ -13,9 +13,10 @@ async function generateDevisRef() {
 exports.getAll = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-      SELECT d.*, c.name AS client_name
+      SELECT d.*, c.name AS client_name, f.id AS facture_id
       FROM devis d
       LEFT JOIN clients c ON d.client_id = c.id
+      LEFT JOIN factures f ON f.devis_id = d.id
       ORDER BY d.id DESC
     `);
         res.json(rows);
@@ -53,13 +54,15 @@ exports.create = async (req, res) => {
         const company = co[0] || {};
 
         const reference = await generateDevisRef();
-        const total_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const tax_amount = subtotal_amount * 0.19;
+        const total_amount = subtotal_amount + tax_amount;
 
         console.log('INSERT DEVIS:', reference);
         const [result] = await conn.query(
-            `INSERT INTO devis (client_id, reference, date, valid_until, status, total_amount)
-       VALUES (?,?,?,?,?,?)`,
-            [client_id, reference, date, valid_until, status || 'pending', total_amount]
+            `INSERT INTO devis (client_id, reference, date, valid_until, status, subtotal_amount, tax_amount, total_amount)
+       VALUES (?,?,?,?,?,?,?,?)`,
+            [client_id, reference, date, valid_until, status || 'pending', subtotal_amount, tax_amount, total_amount]
         );
         const devisId = result.insertId;
 
@@ -87,12 +90,14 @@ exports.update = async (req, res) => {
     try {
         await conn.beginTransaction();
         const { client_id, date, valid_until, status, items } = req.body;
-        const total_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
+        const tax_amount = subtotal_amount * 0.19;
+        const total_amount = subtotal_amount + tax_amount;
 
         console.log('UPDATE DEVIS:', req.params.id);
         await conn.query(
-            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, total_amount=? WHERE id=?',
-            [client_id, date, valid_until, status, total_amount, req.params.id]
+            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
+            [client_id, date, valid_until, status, subtotal_amount, tax_amount, total_amount, req.params.id]
         );
 
         await conn.query("DELETE FROM invoice_items WHERE type='devis' AND parent_id=?", [req.params.id]);
@@ -150,9 +155,9 @@ exports.convertToFacture = async (req, res) => {
         const ref = `FAC-${year}-${String(cnt[0].c + 1).padStart(3, '0')}`;
 
         const [facResult] = await conn.query(
-            `INSERT INTO factures (client_id, reference, date, status, total_amount, devis_id)
-       VALUES (?,?,CURDATE(),'unpaid',?,?)`,
-            [devis.client_id, ref, devis.total_amount, devis.id]
+            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id)
+       VALUES (?,?,CURDATE(),'unpaid',?,?,?,?)`,
+            [devis.client_id, ref, devis.subtotal_amount, devis.tax_amount, devis.total_amount, devis.id]
         );
         const factureId = facResult.insertId;
 
