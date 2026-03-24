@@ -6,15 +6,30 @@ import {
     Edit,
     Trash2,
     Search,
-    Calendar,
+    Calendar as CalendarIcon,
     MapPin,
     User,
     DollarSign,
     ChevronRight,
+    ChevronLeft,
     UserPlus,
-    Users as UserSquare2
+    Users as UserSquare2,
+    LayoutList,
+    Calendar as CalendarViewIcon
 } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+    format,
+    startOfMonth,
+    endOfMonth,
+    startOfWeek,
+    endOfWeek,
+    eachDayOfInterval,
+    isSameMonth,
+    isSameDay,
+    addMonths,
+    subMonths,
+    isToday
+} from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const Shootings = () => {
@@ -23,6 +38,8 @@ const Shootings = () => {
     const [freelancers, setFreelancers] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState('calendar'); // Default to calendar view
+    const [currentMonth, setCurrentMonth] = useState(new Date());
 
     // Modals
     const [modal, setModal] = useState({ isOpen: false, data: null });
@@ -106,7 +123,7 @@ const Shootings = () => {
             await api.post('/payments', { ...paymentForm, shooting_id: detailModal.data.id });
             handleOpenDetail(detailModal.data.id);
             setPaymentForm({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
-            fetchData(); // Update total paid in list
+            fetchData();
         } catch (err) {
             console.error(err);
         }
@@ -144,90 +161,198 @@ const Shootings = () => {
         s.client_name?.toLowerCase().includes(search.toLowerCase())
     );
 
+    // Calendar logic
+    const renderCalendar = () => {
+        const monthStart = startOfMonth(currentMonth);
+        const monthEnd = endOfMonth(monthStart);
+        const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+        const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+        const calendarDays = eachDayOfInterval({
+            start: startDate,
+            end: endDate
+        });
+
+        const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+        return (
+            <div className="calendar-container">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--secondary)', textTransform: 'capitalize' }}>
+                            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+                        </h2>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '5px' }}>
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '5px' }}>
+                                <ChevronRight size={18} />
+                            </button>
+                            <button onClick={() => setCurrentMonth(new Date())} className="btn btn-outline" style={{ padding: '5px 12px', fontSize: '12px' }}>Aujourd'hui</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="calendar-grid">
+                    {weekDays.map(day => (
+                        <div key={day} className="calendar-header-cell">{day}</div>
+                    ))}
+                    {calendarDays.map(day => {
+                        const dayShootings = shootings.filter(s => isSameDay(new Date(s.shooting_date), day));
+                        return (
+                            <div
+                                key={day.toString()}
+                                className={`calendar-day-cell ${!isSameMonth(day, monthStart) ? 'other-month' : ''} ${isToday(day) ? 'today' : ''}`}
+                                onClick={() => {
+                                    if (dayShootings.length === 0) {
+                                        setForm({ ...form, shooting_date: format(day, 'yyyy-MM-dd') });
+                                        handleOpenMain();
+                                    }
+                                }}
+                            >
+                                <span className="calendar-day-number">{format(day, 'd')}</span>
+                                {dayShootings.map(s => (
+                                    <div
+                                        key={s.id}
+                                        className={`calendar-event ${s.status}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenDetail(s.id);
+                                        }}
+                                        title={s.title}
+                                    >
+                                        {s.title}
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <div>
                     <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Shootings</h1>
                     <p style={{ color: 'var(--text-muted)' }}>{shootings.length} événements prévus</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => handleOpenMain()}>
-                    <Plus size={18} /> Nouveau Shooting
-                </button>
-            </div>
-
-            <div className="card" style={{ padding: '0' }}>
-                <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Search size={20} color="var(--text-muted)" />
-                    <input
-                        placeholder="Rechercher par titre ou client..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
-                    />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '4px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+                        <button
+                            onClick={() => setViewMode('calendar')}
+                            style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                borderRadius: '6px',
+                                background: viewMode === 'calendar' ? 'var(--primary-light)' : 'transparent',
+                                color: viewMode === 'calendar' ? 'var(--primary)' : 'var(--text-muted)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '13px',
+                                fontWeight: '600'
+                            }}
+                        >
+                            <CalendarViewIcon size={16} /> Calendrier
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                borderRadius: '6px',
+                                background: viewMode === 'list' ? 'var(--primary-light)' : 'transparent',
+                                color: viewMode === 'list' ? 'var(--primary)' : 'var(--text-muted)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '13px',
+                                fontWeight: '600'
+                            }}
+                        >
+                            <LayoutList size={16} /> Liste
+                        </button>
+                    </div>
+                    <button className="btn btn-primary" onClick={() => handleOpenMain()}>
+                        <Plus size={18} /> Nouveau Shooting
+                    </button>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Shooting</th>
-                            <th>Client</th>
-                            <th>Date & Lieu</th>
-                            <th>Prix & Payé</th>
-                            <th>Status</th>
-                            <th style={{ textAlign: 'right' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map(s => (
-                            <tr key={s.id}>
-                                <td>
-                                    <div style={{ fontWeight: '700', fontSize: '15px' }}>{s.title}</div>
-                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: #{s.id}</div>
-                                </td>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                                        <User size={14} color="var(--primary)" /> {s.client_name}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px' }}>
-                                        <Calendar size={14} color="var(--primary)" /> {s.shooting_date ? format(new Date(s.shooting_date), 'dd MMMM yyyy', { locale: fr }) : '-'}
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                                        <MapPin size={14} /> {s.location}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style={{ fontWeight: '600' }}>{Number(s.total_price || 0).toFixed(3)} DT</div>
-                                    <div style={{ fontSize: '12px', color: Number(s.total_paid || 0) >= Number(s.total_price || 0) ? '#10b981' : '#f59e0b' }}>
-                                        Payé: {Number(s.total_paid || 0).toFixed(3)} DT
-                                    </div>
-                                </td>
-                                <td>
-                                    <span className={`badge badge-${s.status}`}>
-                                        {s.status === 'scheduled' ? 'Planifié' : s.status === 'completed' ? 'Terminé' : 'Annulé'}
-                                    </span>
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => handleOpenDetail(s.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails & Paiements">
-                                            <ChevronRight size={16} />
-                                        </button>
-                                        <button onClick={() => handleOpenMain(s)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(s.id)} className="btn btn-outline" style={{ padding: '6px', color: '#ef4444' }} title="Supprimer">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
             </div>
 
-            {/* Main Create/Edit Modal */}
+            {viewMode === 'calendar' ? (
+                renderCalendar()
+            ) : (
+                <div className="card" style={{ padding: '0' }}>
+                    <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Search size={20} color="var(--text-muted)" />
+                        <input
+                            placeholder="Rechercher par titre ou client..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
+                        />
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Shooting</th>
+                                <th>Client</th>
+                                <th>Date & Lieu</th>
+                                <th>Prix & Payé</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map(s => (
+                                <tr key={s.id}>
+                                    <td>
+                                        <div style={{ fontWeight: '700', fontSize: '15px' }}>{s.title}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: #{s.id}</div>
+                                    </td>
+                                    <td>{s.client_name}</td>
+                                    <td>
+                                        <div style={{ fontSize: '13px' }}>{s.shooting_date ? format(new Date(s.shooting_date), 'dd MMMM yyyy', { locale: fr }) : '-'}</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.location}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: '600' }}>{Number(s.total_price || 0).toFixed(3)} DT</div>
+                                        <div style={{ fontSize: '11px', color: Number(s.total_paid || 0) >= Number(s.total_price || 0) ? '#10b981' : '#f59e0b' }}>
+                                            Payé: {Number(s.total_paid || 0).toFixed(3)} DT
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`badge badge-${s.status}`}>
+                                            {s.status === 'scheduled' ? 'Planifié' : s.status === 'completed' ? 'Terminé' : 'Annulé'}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => handleOpenDetail(s.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
+                                                <ChevronRight size={16} />
+                                            </button>
+                                            <button onClick={() => handleOpenMain(s)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
+                                                <Edit size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(s.id)} className="btn btn-outline" style={{ padding: '6px', color: '#ef4444' }} title="Supprimer">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* Modals remain the same */}
             <Modal isOpen={modal.isOpen} onClose={() => setModal({ isOpen: false, data: null })} title={modal.data ? 'Modifier Shooting' : 'Nouveau Shooting'}>
                 <form onSubmit={handleSubmitMain} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -241,7 +366,7 @@ const Shootings = () => {
                         </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre (ex: Mariage Ahmed & Sarah)</label>
+                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre</label>
                         <input style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
                     </div>
                     <div style={{ display: 'flex', gap: '16px' }}>
@@ -272,7 +397,6 @@ const Shootings = () => {
                 </form>
             </Modal>
 
-            {/* Detail Modal (Payments & Freelancers) */}
             <Modal
                 isOpen={detailModal.isOpen}
                 onClose={() => setDetailModal({ isOpen: false, data: null })}
@@ -286,7 +410,6 @@ const Shootings = () => {
 
                     return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                            {/* Stats Summary */}
                             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Total client</p>
@@ -294,21 +417,19 @@ const Shootings = () => {
                                     <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>Payé: {totalPaidClient.toFixed(3)} DT</p>
                                 </div>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Reste à payer (Client)</p>
+                                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Reste à payer</p>
                                     <h4 style={{ fontSize: '18px', fontWeight: '700', color: (totalClient - totalPaidClient) > 0 ? '#ef4444' : '#10b981' }}>
                                         {(totalClient - totalPaidClient).toFixed(3)} DT
                                     </h4>
                                 </div>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #10b981' }}>
-                                    <p style={{ fontSize: '12px', color: '#047857', marginBottom: '4px', fontWeight: '600' }}>Bénéfice Net Estimé</p>
+                                    <p style={{ fontSize: '12px', color: '#047857', marginBottom: '4px', fontWeight: '600' }}>Bénéfice Net</p>
                                     <h4 style={{ fontSize: '20px', fontWeight: '800', color: '#059669' }}>
                                         {netProfit.toFixed(3)} DT
                                     </h4>
-                                    <p style={{ fontSize: '11px', color: '#059669', marginTop: '4px' }}>Total - Frais Freelancers</p>
                                 </div>
                             </div>
 
-                            {/* Payments Section */}
                             <div>
                                 <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <DollarSign size={18} color="var(--primary)" /> Paiements reçus
@@ -358,10 +479,9 @@ const Shootings = () => {
                                 </form>
                             </div>
 
-                            {/* Freelancers Section */}
                             <div>
                                 <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UserSquare2 size={18} color="var(--primary)" /> Freelancers assignés
+                                    <UserSquare2 size={18} color="var(--primary)" /> Freelancers
                                 </h3>
                                 <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
                                     <table style={{ fontSize: '13px' }}>
@@ -387,16 +507,16 @@ const Shootings = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                <form onSubmit={handleAssignFreelancer} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                                <form onSubmit={handleAssignFreelancer} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '8px', alignItems: 'end' }}>
                                     <div>
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Freelancer</label>
                                         <select style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={assignForm.freelancer_id} onChange={e => setAssignForm({ ...assignForm, freelancer_id: e.target.value })} required>
                                             <option value="">Choisir</option>
-                                            {freelancers.map(fr => <option key={fr.id} value={fr.id}>{fr.name} ({fr.specialty})</option>)}
+                                            {freelancers.map(fr => <option key={fr.id} value={fr.id}>{fr.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '11px', fontWeight: '600' }}>Montant (DT)</label>
+                                        <label style={{ fontSize: '11px', fontWeight: '600' }}>Montant</label>
                                         <input type="number" step="0.001" style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={assignForm.agreed_amount} onChange={e => setAssignForm({ ...assignForm, agreed_amount: e.target.value })} required />
                                     </div>
                                     <button type="submit" className="btn btn-primary" style={{ padding: '8px' }}><UserPlus size={16} /></button>
