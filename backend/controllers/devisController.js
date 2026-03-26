@@ -58,18 +58,17 @@ exports.create = async (req, res) => {
         const tax_amount = subtotal_amount * 0.19;
         const total_amount = subtotal_amount + tax_amount;
 
-        console.log('INSERT DEVIS:', reference);
         const [result] = await conn.query(
-            `INSERT INTO devis (client_id, reference, date, valid_until, status, subtotal_amount, tax_amount, total_amount)
-       VALUES (?,?,?,?,?,?,?,?)`,
-            [client_id, reference, date, valid_until, status || 'pending', subtotal_amount, tax_amount, total_amount]
+            `INSERT INTO devis (client_id, reference, date, valid_until, status, title, subtotal_amount, tax_amount, total_amount)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+            [client_id, reference, date, valid_until, status || 'pending', req.body.title || null, subtotal_amount, tax_amount, total_amount]
         );
         const devisId = result.insertId;
 
         for (const item of (items || [])) {
             await conn.query(
-                "INSERT INTO invoice_items (type, parent_id, description, quantity, unit_price, total_price) VALUES ('devis',?,?,?,?,?)",
-                [devisId, item.description, item.quantity, item.unit_price, item.total_price]
+                "INSERT INTO invoice_items (type, parent_id, description, days, quantity, unit_price, total_price) VALUES ('devis',?,?,?,?,?,?)",
+                [devisId, item.description, item.days || null, item.quantity, item.unit_price, item.total_price]
             );
         }
 
@@ -96,15 +95,15 @@ exports.update = async (req, res) => {
 
         console.log('UPDATE DEVIS:', req.params.id);
         await conn.query(
-            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
-            [client_id, date, valid_until, status, subtotal_amount, tax_amount, total_amount, req.params.id]
+            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, title=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
+            [client_id, date, valid_until, status, req.body.title || null, subtotal_amount, tax_amount, total_amount, req.params.id]
         );
 
         await conn.query("DELETE FROM invoice_items WHERE type='devis' AND parent_id=?", [req.params.id]);
         for (const item of (items || [])) {
             await conn.query(
-                "INSERT INTO invoice_items (type, parent_id, description, quantity, unit_price, total_price) VALUES ('devis',?,?,?,?,?)",
-                [req.params.id, item.description, item.quantity, item.unit_price, item.total_price]
+                "INSERT INTO invoice_items (type, parent_id, description, days, quantity, unit_price, total_price) VALUES ('devis',?,?,?,?,?,?)",
+                [req.params.id, item.description, item.days || null, item.quantity, item.unit_price, item.total_price]
             );
         }
 
@@ -121,12 +120,27 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+    const conn = await pool.getConnection();
     try {
-        await pool.query("DELETE FROM invoice_items WHERE type='devis' AND parent_id=?", [req.params.id]);
-        await pool.query('DELETE FROM devis WHERE id=?', [req.params.id]);
-        res.json({ message: 'Deleted' });
+        await conn.beginTransaction();
+        const devisId = req.params.id;
+
+        // 1. Delete dependent items
+        await conn.query("DELETE FROM invoice_items WHERE type='devis' AND parent_id=?", [devisId]);
+
+        // 2. Unlink from factures (keep the facture, but remove the reference to this devis)
+        await conn.query('UPDATE factures SET devis_id=NULL WHERE devis_id=?', [devisId]);
+
+        // 3. Finally delete the devis
+        await conn.query('DELETE FROM devis WHERE id=?', [devisId]);
+
+        await conn.commit();
+        res.json({ message: 'Devis and its items deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        await conn.rollback();
+        res.status(500).json({ error: 'Failed to delete devis: ' + err.message });
+    } finally {
+        conn.release();
     }
 };
 
@@ -146,26 +160,46 @@ exports.convertToFacture = async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const [devisRows] = await conn.query('SELECT * FROM devis WHERE id=?', [req.params.id]);
+        const [devisRows] = await conn.query('SELECT d.*, c.name AS client_name FROM devis d LEFT JOIN clients c ON d.client_id = c.id WHERE d.id=?', [req.params.id]);
         if (!devisRows.length) return res.status(404).json({ error: 'Devis not found' });
         const devis = devisRows[0];
 
+        // 1. Create a Shooting first
+        const { shooting_date, start_time, duration, location } = req.body;
+        const shootingTitle = devis.title || `Prestation - ${devis.reference} (${devis.client_name})`;
+        const [shotResult] = await conn.query(
+            "INSERT INTO shootings (client_id, title, shooting_date, location, start_time, duration, total_price, status) VALUES (?,?,?,?,?,?,?,?)",
+            [
+                devis.client_id,
+                shootingTitle,
+                shooting_date || devis.date,
+                location || null,
+                start_time || null,
+                duration || null,
+                devis.total_amount,
+                'scheduled'
+            ]
+        );
+        const shootingId = shotResult.insertId;
+
+        // 2. Create the Facture linked to the Shooting
         const year = new Date().getFullYear();
         const [cnt] = await conn.query("SELECT COUNT(*) as c FROM factures WHERE YEAR(date)=?", [year]);
         const ref = `FAC-${year}-${String(cnt[0].c + 1).padStart(3, '0')}`;
 
         const [facResult] = await conn.query(
-            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id)
-       VALUES (?,?,CURDATE(),'unpaid',?,?,?,?)`,
-            [devis.client_id, ref, devis.subtotal_amount, devis.tax_amount, devis.total_amount, devis.id]
+            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id)
+       VALUES (?,?,CURDATE(),'unpaid',?,?,?,?,?)`,
+            [devis.client_id, ref, devis.subtotal_amount, devis.tax_amount, devis.total_amount, devis.id, shootingId]
         );
         const factureId = facResult.insertId;
 
+        // 3. Copy items
         const [items] = await conn.query("SELECT * FROM invoice_items WHERE type='devis' AND parent_id=?", [req.params.id]);
         for (const item of items) {
             await conn.query(
-                "INSERT INTO invoice_items (type, parent_id, description, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?)",
-                [factureId, item.description, item.quantity, item.unit_price, item.total_price]
+                "INSERT INTO invoice_items (type, parent_id, description, days, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?,?)",
+                [factureId, item.description, item.days || null, item.quantity, item.unit_price, item.total_price]
             );
         }
 
@@ -174,7 +208,7 @@ exports.convertToFacture = async (req, res) => {
 
         const [newFac] = await conn.query('SELECT * FROM factures WHERE id=?', [factureId]);
         const [newItems] = await conn.query("SELECT * FROM invoice_items WHERE type='facture' AND parent_id=?", [factureId]);
-        res.status(201).json({ ...newFac[0], items: newItems });
+        res.status(201).json({ ...newFac[0], items: newItems, shootingId });
     } catch (err) {
         await conn.rollback();
         res.status(500).json({ error: err.message });

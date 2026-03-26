@@ -67,11 +67,18 @@ const Dashboard = () => {
 
             <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '40px' }}>
                 <StatCard
-                    title="Chiffre d'affaires"
-                    value={`${Number(stats.totalRevenue || 0).toFixed(3)} DT`}
+                    title="Chiffre d'affaires (Facturé)"
+                    value={`${Number(stats.invoicedRevenue || 0).toFixed(3)} DT`}
                     icon={<TrendingUp size={24} />}
+                    color="#6C63FF"
+                    subValue="Montant total des factures"
+                />
+                <StatCard
+                    title="Chiffre d'affaires (Encaissé)"
+                    value={`${Number(stats.receivedRevenue || 0).toFixed(3)} DT`}
+                    icon={<Wallet size={24} />}
                     color="#10b981"
-                    subValue="Factures payées et partielles"
+                    subValue="Total des paiements reçus"
                 />
                 <StatCard
                     title="Factures Impayées"
@@ -88,9 +95,9 @@ const Dashboard = () => {
                 <StatCard
                     title="Bénéfice Net"
                     value={`${Number(stats.profit || 0).toFixed(3)} DT`}
-                    icon={<Wallet size={24} />}
+                    icon={<TrendingUp size={24} />}
                     color="#f59e0b"
-                    subValue="Total payé - Frais freelancers"
+                    subValue="Encaissé - Frais freelancers"
                 />
             </div>
 

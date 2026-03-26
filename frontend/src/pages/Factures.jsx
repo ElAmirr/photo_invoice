@@ -8,7 +8,10 @@ import {
     Search,
     FileDown,
     Trash2,
-    Camera
+    Camera,
+    Eye,
+    ChevronRight,
+    DollarSign
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -19,6 +22,7 @@ const Factures = () => {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ isOpen: false, data: null });
+    const [detailModal, setDetailModal] = useState({ isOpen: false, data: null });
 
     // Form
     const [form, setForm] = useState({
@@ -51,6 +55,16 @@ const Factures = () => {
         fetchData();
     }, []);
 
+    // Sync client with shooting
+    useEffect(() => {
+        if (form.shooting_id) {
+            const selectedShot = shootings.find(s => String(s.id) === String(form.shooting_id));
+            if (selectedShot) {
+                setForm(prev => ({ ...prev, client_id: selectedShot.client_id }));
+            }
+        }
+    }, [form.shooting_id, shootings]);
+
     const handleOpen = async (data = null) => {
         if (data) {
             const res = await api.get(`/factures/${data.id}`);
@@ -71,6 +85,15 @@ const Factures = () => {
             setItems([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
         }
         setModal({ isOpen: true, data });
+    };
+
+    const handleOpenDetail = async (id) => {
+        try {
+            const res = await api.get(`/factures/${id}`);
+            setDetailModal({ isOpen: true, data: res.data });
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const handleClose = () => {
@@ -161,9 +184,20 @@ const Factures = () => {
                                 <td>{f.reference}</td>
                                 <td>{f.client_name}</td>
                                 <td>{f.date ? format(new Date(f.date), 'dd/MM/yyyy') : '-'}</td>
-                                <td style={{ textAlign: 'right', fontWeight: '700' }}>{Number(f.total_amount || 0).toFixed(3)} DT</td>
+                                <td style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: '700' }}>{Number(f.total_amount || 0).toFixed(3)} DT</div>
+                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {Number(f.total_paid || 0).toFixed(3)} DT</div>
+                                    {Number(f.total_amount || 0) - Number(f.total_paid || 0) > 0 && (
+                                        <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
+                                            Reste: {(Number(f.total_amount || 0) - Number(f.total_paid || 0)).toFixed(3)} DT
+                                        </div>
+                                    )}
+                                </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => handleOpenDetail(f.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
+                                            <ChevronRight size={16} />
+                                        </button>
                                         <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
                                             <FileDown size={16} />
                                         </button>
@@ -191,12 +225,14 @@ const Factures = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Client</label>
                             <select
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} required
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: form.shooting_id ? '#f8fafc' : 'white', cursor: form.shooting_id ? 'not-allowed' : 'default' }}
+                                value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}
+                                required disabled={!!form.shooting_id}
                             >
                                 <option value="">Sélectionner un client</option>
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
+                            {form.shooting_id && <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600' }}>Client verrouillé par le shooting choisi</span>}
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -225,6 +261,76 @@ const Factures = () => {
                         {modal.data ? 'Mettre à jour la facture' : 'Créer la facture'}
                     </button>
                 </form>
+            </Modal>
+            <Modal
+                isOpen={detailModal.isOpen}
+                onClose={() => setDetailModal({ isOpen: false, data: null })}
+                title={detailModal.data ? `Détails Facture: ${detailModal.data.reference}` : ''}
+            >
+                {detailModal.data && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Client</p>
+                                <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{detailModal.data.client_name}</h4>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{detailModal.data.client_email}</p>
+                            </div>
+                            <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Date & Réf</p>
+                                <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{detailModal.data.reference}</h4>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{format(new Date(detailModal.data.date), 'dd MMMM yyyy')}</p>
+                            </div>
+                        </div>
+
+                        {detailModal.data.shooting_id && (
+                            <div style={{ padding: '12px 16px', backgroundColor: 'var(--primary-light)', borderRadius: '8px', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Camera size={18} color="var(--primary)" />
+                                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--primary)' }}>
+                                    Liée au Shooting: {detailModal.data.shooting_title || 'N/A'}
+                                </span>
+                            </div>
+                        )}
+
+                        <div>
+                            <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Détail des prestations</h3>
+                            <table style={{ fontSize: '13px' }}>
+                                <thead style={{ backgroundColor: 'transparent' }}>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th style={{ textAlign: 'center' }}>Qté</th>
+                                        <th style={{ textAlign: 'right' }}>Prix Unitaire</th>
+                                        <th style={{ textAlign: 'right' }}>Total HT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailModal.data.items.map((item, idx) => (
+                                        <tr key={idx}>
+                                            <td>{item.description}</td>
+                                            <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                                            <td style={{ textAlign: 'right' }}>{Number(item.unit_price).toFixed(3)} DT</td>
+                                            <td style={{ textAlign: 'right', fontWeight: '600' }}>{Number(item.total_price).toFixed(3)} DT</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style={{ alignSelf: 'flex-end', width: '250px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                                <span>Total HT:</span>
+                                <span>{Number(detailModal.data.subtotal_amount).toFixed(3)} DT</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                                <span>TVA (19%):</span>
+                                <span>{Number(detailModal.data.tax_amount).toFixed(3)} DT</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '4px' }}>
+                                <span>Total TTC:</span>
+                                <span style={{ color: 'var(--primary)' }}>{Number(detailModal.data.total_amount).toFixed(3)} DT</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     );

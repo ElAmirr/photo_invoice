@@ -44,7 +44,9 @@ exports.getOne = async (req, res) => {
             [req.params.id]
         );
 
-        res.json({ ...rows[0], freelancers, payments });
+        const total_freelancer_cost = freelancers.reduce((sum, f) => sum + parseFloat(f.agreed_amount || 0), 0);
+
+        res.json({ ...rows[0], freelancers, payments, total_freelancer_cost });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -52,10 +54,10 @@ exports.getOne = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { client_id, title, shooting_date, location, total_price, status } = req.body;
+        const { client_id, title, shooting_date, location, total_price, status, start_time, duration } = req.body;
         const [result] = await pool.query(
-            'INSERT INTO shootings (client_id, title, shooting_date, location, total_price, status) VALUES (?,?,?,?,?,?)',
-            [client_id, title, shooting_date, location, total_price, status || 'scheduled']
+            'INSERT INTO shootings (client_id, title, shooting_date, location, total_price, status, start_time, duration) VALUES (?,?,?,?,?,?,?,?)',
+            [client_id, title, shooting_date, location, total_price, status || 'scheduled', start_time || null, duration || null]
         );
         const [rows] = await pool.query('SELECT * FROM shootings WHERE id=?', [result.insertId]);
         res.status(201).json(rows[0]);
@@ -66,10 +68,10 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
     try {
-        const { client_id, title, shooting_date, location, total_price, status } = req.body;
+        const { client_id, title, shooting_date, location, total_price, status, start_time, duration } = req.body;
         await pool.query(
-            'UPDATE shootings SET client_id=?, title=?, shooting_date=?, location=?, total_price=?, status=? WHERE id=?',
-            [client_id, title, shooting_date, location, total_price, status, req.params.id]
+            'UPDATE shootings SET client_id=?, title=?, shooting_date=?, location=?, total_price=?, status=?, start_time=?, duration=? WHERE id=?',
+            [client_id, title, shooting_date, location, total_price, status, start_time || null, duration || null, req.params.id]
         );
         const [rows] = await pool.query('SELECT * FROM shootings WHERE id=?', [req.params.id]);
         res.json(rows[0]);
@@ -79,11 +81,30 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+    const conn = await pool.getConnection();
     try {
-        await pool.query('DELETE FROM shootings WHERE id=?', [req.params.id]);
-        res.json({ message: 'Deleted' });
+        await conn.beginTransaction();
+        const shootingId = req.params.id;
+
+        // 1. Delete dependent payments
+        await conn.query('DELETE FROM payments WHERE shooting_id=?', [shootingId]);
+
+        // 2. Delete freelancer assignments
+        await conn.query('DELETE FROM shooting_freelancers WHERE shooting_id=?', [shootingId]);
+
+        // 3. Unlink from factures (keep the facture, but remove the reference to this shooting)
+        await conn.query('UPDATE factures SET shooting_id=NULL WHERE shooting_id=?', [shootingId]);
+
+        // 4. Finally delete the shooting
+        await conn.query('DELETE FROM shootings WHERE id=?', [shootingId]);
+
+        await conn.commit();
+        res.json({ message: 'Shooting and its related data (payments, assignments) deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        await conn.rollback();
+        res.status(500).json({ error: 'Failed to delete shooting: ' + err.message });
+    } finally {
+        conn.release();
     }
 };
 

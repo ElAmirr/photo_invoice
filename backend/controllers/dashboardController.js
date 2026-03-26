@@ -2,33 +2,34 @@ const pool = require('../db/connection');
 
 exports.getStats = async (req, res) => {
     try {
-        // Revenue = Sum of all payments (which includes shooting advances)
-        // PLUS sum of total_amount from 'paid' factures that are NOT linked to a shooting (to avoid double counting)
-        const [[factureIncome]] = await pool.query(
-            "SELECT COALESCE(SUM(total_amount),0) AS total FROM factures WHERE status='paid' AND shooting_id IS NULL"
+        // 1. Invoiced Revenue (Sum of all factures)
+        const [[factureTotal]] = await pool.query(
+            "SELECT COALESCE(SUM(total_amount),0) AS total FROM factures"
         );
-        const [[clientPayments]] = await pool.query(
+        const invoicedRevenue = parseFloat(factureTotal.total);
+
+        // 2. Received Revenue (Sum of all payments)
+        const [[paymentsTotal]] = await pool.query(
             "SELECT COALESCE(SUM(amount),0) AS total FROM payments"
         );
+        const receivedRevenue = parseFloat(paymentsTotal.total);
 
-        const totalRevenue = parseFloat(factureIncome.total) + parseFloat(clientPayments.total);
-
-        // Unpaid invoices count
+        // 3. Unpaid invoices count
         const [[unpaid]] = await pool.query(
             "SELECT COUNT(*) AS count FROM factures WHERE status='unpaid'"
         );
 
-        // Upcoming shootings (next 30 days)
+        // 4. Upcoming shootings (next 30 days)
         const [[upcoming]] = await pool.query(
-            "SELECT COUNT(*) AS count FROM shootings WHERE status='scheduled' AND shooting_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
+            "SELECT COUNT(*) AS count FROM shootings WHERE status='scheduled' AND shooting_date >= CURDATE() AND shooting_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
         );
 
-        // Total freelancer costs paid
+        // 5. Total freelancer costs paid
         const [[freelancerCosts]] = await pool.query(
             "SELECT COALESCE(SUM(paid_amount),0) AS total FROM shooting_freelancers"
         );
 
-        const profit = totalRevenue - parseFloat(freelancerCosts.total);
+        const profit = receivedRevenue - parseFloat(freelancerCosts.total);
 
         // Recent shootings (last 5)
         const [recentShootings] = await pool.query(`
@@ -53,11 +54,11 @@ exports.getStats = async (req, res) => {
     `);
 
         res.json({
-            totalRevenue,
+            invoicedRevenue,
+            receivedRevenue,
             unpaidCount: unpaid.count,
             upcomingShootings: upcoming.count,
             profit,
-            totalClientPayments: totalRevenue,
             recentShootings,
             recentFactures,
         });

@@ -11,6 +11,8 @@ import {
     CircleDollarSign
 } from 'lucide-react';
 
+import logo from '../assets/logo.png';
+
 const Sidebar = () => {
     const links = [
         { to: '/', icon: <LayoutDashboard size={20} />, label: 'Tableau de bord' },
@@ -35,19 +37,51 @@ const Sidebar = () => {
             display: 'flex',
             flexDirection: 'column'
         }}>
-            <div className="logo" style={{
-                fontSize: '22px',
-                fontWeight: '700',
-                marginBottom: '40px',
+            <div style={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '12px',
-                color: 'var(--primary-light)'
+                marginBottom: '40px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255,255,255,0.05)'
             }}>
-                <Camera size={28} className="text-primary" style={{ color: 'var(--primary)' }} />
-                <span>PhotoStudio</span>
+                <div className="logo" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    marginBottom: '6px'
+                }}>
+                    <img src={logo} alt="Shootix" style={{ height: '42px', objectFit: 'contain' }} />
+                    <span style={{
+                        fontSize: '24px',
+                        fontWeight: '800',
+                        color: 'rgb(189, 0, 251)',
+                        letterSpacing: '1px'
+                    }}>SHOOTIX</span>
+                </div>
+                <a
+                    href="https://shootix.tn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        window.open('https://shootix.tn', '_blank');
+                    }}
+                    style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: 'rgba(255,255,255,0.4)',
+                        textDecoration: 'none',
+                        transition: 'color 0.2s',
+                        letterSpacing: '0.5px'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = 'white'}
+                    onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.4)'}
+                >
+                    shootix.tn
+                </a>
             </div>
-
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {links.map(link => (
                     <NavLink
@@ -76,7 +110,7 @@ const Sidebar = () => {
 
             <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #334155' }}>
                 <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center' }}>
-                    &copy; 2026 Photographer Management
+                    &copy; 2026 Shootix — Gestion de Studio
                 </div>
             </div>
         </div>

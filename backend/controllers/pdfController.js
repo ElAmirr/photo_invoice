@@ -78,6 +78,7 @@ function buildHtml(type, data) {
     <tr>
       <td>${i + 1}</td>
       <td>${item.description || ''}</td>
+      <td style="text-align:center;">${item.days || '-'}</td>
       <td style="text-align:center;">${item.quantity}</td>
       <td style="text-align:right;">${formatCurrency(item.unit_price)}</td>
       <td style="text-align:right;font-weight:600;">${formatCurrency(item.total_price)}</td>
@@ -170,7 +171,8 @@ function buildHtml(type, data) {
       <tr>
         <th style="width:40px;">#</th>
         <th>Description</th>
-        <th style="width:70px;text-align:center;">Qté</th>
+        <th style="width:80px;text-align:center;">Nbre Jours</th>
+        <th style="width:60px;text-align:center;">Qté</th>
         <th style="width:100px;text-align:right;">Prix Unit.</th>
         <th style="width:110px;text-align:right;">Total</th>
       </tr>
@@ -197,7 +199,10 @@ function buildHtml(type, data) {
 
   <div class="footer">
     <p>${company.name || ''} — ${company.address || ''} — ${company.phone || ''}</p>
-    <p>Merci pour votre confiance.</p>
+    <div style="margin-top: 10px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 5px;">
+       <span style="font-weight: 700; color: #6C63FF;">Shootix</span> 
+       <span>— Gestion Professionnelle de Studio</span>
+    </div>
   </div>
 </body>
 </html>`;

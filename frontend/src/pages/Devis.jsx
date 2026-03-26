@@ -23,13 +23,19 @@ const Devis = () => {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ isOpen: false, data: null });
+    const [convModal, setConvModal] = useState({
+        isOpen: false,
+        devisId: null,
+        form: { shooting_date: '', start_time: '', duration: '', location: '' }
+    });
 
     // Form
     const [form, setForm] = useState({
         client_id: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         valid_until: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        status: 'pending'
+        status: 'pending',
+        title: ''
     });
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
 
@@ -60,7 +66,8 @@ const Devis = () => {
                 client_id: res.data.client_id,
                 date: format(new Date(res.data.date), 'yyyy-MM-dd'),
                 valid_until: format(new Date(res.data.valid_until), 'yyyy-MM-dd'),
-                status: res.data.status
+                status: res.data.status,
+                title: res.data.title || ''
             });
             setItems(res.data.items);
         } else {
@@ -68,7 +75,8 @@ const Devis = () => {
                 client_id: '',
                 date: format(new Date(), 'yyyy-MM-dd'),
                 valid_until: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-                status: 'pending'
+                status: 'pending',
+                title: ''
             });
             setItems([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
         }
@@ -105,16 +113,29 @@ const Devis = () => {
         }
     };
 
-    const convertToFacture = async (id) => {
-        if (window.confirm('Voulez-vous vraiment convertir ce devis en facture finale ? Cette action est irréversible.')) {
-            try {
-                await api.post(`/devis/${id}/convert`);
-                alert('✅ Facture générée avec succès ! Retrouvez-la dans la section Factures.');
-                fetchData();
-            } catch (err) {
-                console.error(err);
-                alert('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message));
+    const convertToFacture = (id, devisDate) => {
+        setConvModal({
+            isOpen: true,
+            devisId: id,
+            form: {
+                shooting_date: format(new Date(devisDate), 'yyyy-MM-dd'),
+                start_time: '10:00',
+                duration: '2',
+                location: ''
             }
+        });
+    };
+
+    const handleConfirmConversion = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post(`/devis/${convModal.devisId}/convert`, convModal.form);
+            alert('✅ Shooting planifié et Facture générée avec succès !');
+            setConvModal({ ...convModal, isOpen: false });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message));
         }
     };
 
@@ -135,7 +156,8 @@ const Devis = () => {
 
     const filtered = devis.filter(d =>
         d.reference.toLowerCase().includes(search.toLowerCase()) ||
-        d.client_name?.toLowerCase().includes(search.toLowerCase())
+        d.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+        d.title?.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -175,7 +197,10 @@ const Devis = () => {
                         {filtered.map(d => (
                             <tr key={d.id}>
                                 <td style={{ fontWeight: '700', color: 'var(--primary)' }}>{d.reference}</td>
-                                <td>{d.client_name}</td>
+                                <td>
+                                    <div style={{ fontWeight: '600' }}>{d.client_name}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{d.title || '(Sans titre)'}</div>
+                                </td>
                                 <td>
                                     <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yyyy') : '-'}</div>
                                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yyyy') : '-'}</div>
@@ -190,7 +215,7 @@ const Devis = () => {
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                                         {!d.facture_id ? (
                                             <button
-                                                onClick={() => convertToFacture(d.id)}
+                                                onClick={() => convertToFacture(d.id, d.date)}
                                                 className="btn"
                                                 style={{
                                                     padding: '6px 12px',
@@ -248,6 +273,14 @@ const Devis = () => {
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre / Nom du Projet (Interne)</label>
+                            <input
+                                placeholder="ex: Mariage Sarah & Amine"
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+                            />
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du devis</label>
                             <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
@@ -271,6 +304,62 @@ const Devis = () => {
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '30px', width: '100%', justifyContent: 'center', padding: '14px' }}>
                         {modal.data ? 'Mettre à jour le devis' : 'Créer le devis'}
                     </button>
+                </form>
+            </Modal>
+
+            <Modal
+                isOpen={convModal.isOpen}
+                onClose={() => setConvModal({ ...convModal, isOpen: false })}
+                title="Détails du Shooting (Conversion)"
+            >
+                <form onSubmit={handleConfirmConversion} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                        Veuillez confirmer les informations de planification pour la création automatique du shooting.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du Shooting</label>
+                        <input
+                            type="date"
+                            style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                            value={convModal.form.shooting_date}
+                            onChange={e => setConvModal({ ...convModal, form: { ...convModal.form, shooting_date: e.target.value } })}
+                            required
+                        />
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Heure de début</label>
+                            <input
+                                type="text" placeholder="14:00"
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                value={convModal.form.start_time}
+                                onChange={e => setConvModal({ ...convModal, form: { ...convModal.form, start_time: e.target.value } })}
+                            />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Durée (heures)</label>
+                            <input
+                                type="number"
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                value={convModal.form.duration}
+                                onChange={e => setConvModal({ ...convModal, form: { ...convModal.form, duration: e.target.value } })}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Lieu / Adresse</label>
+                        <input
+                            placeholder="ex: Sidi Bou Saïd, Tunis"
+                            style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                            value={convModal.form.location}
+                            onChange={e => setConvModal({ ...convModal, form: { ...convModal.form, location: e.target.value } })}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                        <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setConvModal({ ...convModal, isOpen: false })}>Annuler</button>
+                        <button type="submit" className="btn btn-primary" style={{ flex: 2, justifyContent: 'center' }}>Confirmer et Convertir</button>
+                    </div>
                 </form>
             </Modal>
         </div>

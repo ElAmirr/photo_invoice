@@ -80,7 +80,7 @@ const Shootings = () => {
                 shooting_date: data.shooting_date ? format(new Date(data.shooting_date), 'yyyy-MM-dd') : ''
             });
         } else {
-            setForm({ client_id: '', title: '', shooting_date: '', location: '', total_price: 0, status: 'scheduled' });
+            setForm({ client_id: '', title: '', shooting_date: '', location: '', total_price: 0, status: 'scheduled', start_time: '', duration: '' });
         }
         setModal({ isOpen: true, data });
     };
@@ -326,6 +326,11 @@ const Shootings = () => {
                                         <div style={{ fontSize: '11px', color: Number(s.total_paid || 0) >= Number(s.total_price || 0) ? '#10b981' : '#f59e0b' }}>
                                             Payé: {Number(s.total_paid || 0).toFixed(3)} DT
                                         </div>
+                                        {Number(s.total_price || 0) - Number(s.total_paid || 0) > 0 && (
+                                            <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
+                                                Reste: {(Number(s.total_price || 0) - Number(s.total_paid || 0)).toFixed(3)} DT
+                                            </div>
+                                        )}
                                     </td>
                                     <td>
                                         <span className={`badge badge-${s.status}`}>
@@ -379,6 +384,16 @@ const Shootings = () => {
                             <input type="number" step="0.001" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.total_price} onChange={e => setForm({ ...form, total_price: e.target.value })} required />
                         </div>
                     </div>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Heure (ex: 14:00)</label>
+                            <input type="text" placeholder="10:30" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.start_time || ''} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Durée (heures)</label>
+                            <input type="number" placeholder="2" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} />
+                        </div>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '600' }}>Lieu</label>
                         <input style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
@@ -414,7 +429,14 @@ const Shootings = () => {
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Total client</p>
                                     <h4 style={{ fontSize: '18px', fontWeight: '700' }}>{totalClient.toFixed(3)} DT</h4>
-                                    <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>Payé: {totalPaidClient.toFixed(3)} DT</p>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                                        <p style={{ fontSize: '11px', color: '#10b981' }}>Payé: {totalPaidClient.toFixed(3)} DT</p>
+                                        {detailModal.data.start_time && (
+                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', backgroundColor: 'var(--border)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                🕒 {detailModal.data.start_time} ({detailModal.data.duration}h)
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Reste à payer</p>
@@ -481,7 +503,7 @@ const Shootings = () => {
 
                             <div>
                                 <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UserSquare2 size={18} color="var(--primary)" /> Freelancers
+                                    <UserSquare2 size={18} color="var(--primary)" /> Freelancers & Payes
                                 </h3>
                                 <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
                                     <table style={{ fontSize: '13px' }}>
@@ -500,26 +522,50 @@ const Shootings = () => {
                                                     <td style={{ fontWeight: '600' }}>{Number(f.agreed_amount || 0).toFixed(3)} DT</td>
                                                     <td style={{ color: Number(f.paid_amount || 0) >= Number(f.agreed_amount || 0) ? '#10b981' : '#f59e0b' }}>{Number(f.paid_amount || 0).toFixed(3)} DT</td>
                                                     <td>
-                                                        <button onClick={() => handleRemoveFreelancer(f.freelancer_id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                                            <button
+                                                                onClick={() => setAssignForm({ freelancer_id: f.freelancer_id, agreed_amount: f.agreed_amount, paid_amount: f.paid_amount || 0 })}
+                                                                style={{ border: 'none', background: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                                                title="Modifier / Payer"
+                                                            >
+                                                                <Edit size={14} />
+                                                            </button>
+                                                            <button onClick={() => handleRemoveFreelancer(f.freelancer_id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }} title="Retirer">
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                <form onSubmit={handleAssignFreelancer} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                                <form onSubmit={handleAssignFreelancer} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
                                     <div>
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Freelancer</label>
-                                        <select style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={assignForm.freelancer_id} onChange={e => setAssignForm({ ...assignForm, freelancer_id: e.target.value })} required>
+                                        <select style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', backgroundColor: assignForm.freelancer_id ? '#f8fafc' : 'white' }} value={assignForm.freelancer_id} onChange={e => setAssignForm({ ...assignForm, freelancer_id: e.target.value })} required disabled={detailModal.data.freelancers.some(f => f.freelancer_id == assignForm.freelancer_id)}>
                                             <option value="">Choisir</option>
                                             {freelancers.map(fr => <option key={fr.id} value={fr.id}>{fr.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '11px', fontWeight: '600' }}>Montant</label>
+                                        <label style={{ fontSize: '11px', fontWeight: '600' }}>Total Convenu</label>
                                         <input type="number" step="0.001" style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={assignForm.agreed_amount} onChange={e => setAssignForm({ ...assignForm, agreed_amount: e.target.value })} required />
                                     </div>
-                                    <button type="submit" className="btn btn-primary" style={{ padding: '8px' }}><UserPlus size={16} /></button>
+                                    <div>
+                                        <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--primary)' }}>Payé (Avance+)</label>
+                                        <input type="number" step="0.001" style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', borderColor: 'var(--primary)' }} value={assignForm.paid_amount} onChange={e => setAssignForm({ ...assignForm, paid_amount: e.target.value })} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button type="submit" className="btn btn-primary" style={{ padding: '8px' }} title={detailModal.data.freelancers.some(f => f.freelancer_id == assignForm.freelancer_id) ? "Mettre à jour" : "Ajouter"}>
+                                            {detailModal.data.freelancers.some(f => f.freelancer_id == assignForm.freelancer_id) ? <Edit size={16} /> : <UserPlus size={16} />}
+                                        </button>
+                                        {assignForm.freelancer_id && (
+                                            <button type="button" onClick={() => setAssignForm({ freelancer_id: '', agreed_amount: '', paid_amount: 0 })} className="btn btn-outline" style={{ padding: '8px' }} title="Vider">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </form>
                             </div>
                         </div>

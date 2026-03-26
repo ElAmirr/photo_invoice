@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 
 const ItemsTable = ({ items, setItems }) => {
     const addItem = () => {
-        setItems([...items, { description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
+        setItems([...items, { description: '', days: '', quantity: 1, unit_price: 0, total_price: 0 }]);
     };
 
     const removeItem = (index) => {
@@ -43,9 +43,10 @@ const ItemsTable = ({ items, setItems }) => {
                 <table style={{ minWidth: '600px' }}>
                     <thead>
                         <tr>
-                            <th style={{ width: '40%' }}>Description</th>
-                            <th style={{ width: '15%', textAlign: 'center' }}>Qté</th>
-                            <th style={{ width: '20%', textAlign: 'right' }}>Prix Unit. (DT)</th>
+                            <th style={{ width: '35%' }}>Description</th>
+                            <th style={{ width: '15%', textAlign: 'center' }}>Nbre Jours</th>
+                            <th style={{ width: '10%', textAlign: 'center' }}>Qté</th>
+                            <th style={{ width: '15%', textAlign: 'right' }}>Prix Unit. (DT)</th>
                             <th style={{ width: '20%', textAlign: 'right' }}>Total (DT)</th>
                             <th style={{ width: '5%', textAlign: 'center' }}></th>
                         </tr>
@@ -59,6 +60,14 @@ const ItemsTable = ({ items, setItems }) => {
                                         value={item.description}
                                         placeholder="ex: Séance photo studio"
                                         onChange={e => handleChange(index, 'description', e.target.value)}
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        style={{ width: '100%', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', textAlign: 'center' }}
+                                        value={item.days || ''}
+                                        placeholder="ex: 1 jour"
+                                        onChange={e => handleChange(index, 'days', e.target.value)}
                                     />
                                 </td>
                                 <td>

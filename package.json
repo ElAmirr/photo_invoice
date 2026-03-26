@@ -1,7 +1,7 @@
 {
-    "name": "photo-studio-management",
-    "version": "1.0.2",
-    "description": "Photo Studio Management System",
+    "name": "shootix",
+    "version": "1.0.3",
+    "description": "Shootix - Studio Management System",
     "main": "electron/main.js",
     "scripts": {
         "frontend:dev": "npm --prefix frontend run dev",
@@ -14,8 +14,8 @@
     "author": "",
     "license": "ISC",
     "build": {
-        "appId": "com.photostudio.management",
-        "productName": "Photo Studio Management",
+        "appId": "com.shootix.management",
+        "productName": "Shootix",
         "directories": {
             "output": "dist-electron"
         },

@@ -1,5 +1,13 @@
 const pool = require('../db/connection');
 
+async function syncShootingPrice(factureId, conn) {
+    const db = conn || pool;
+    const [factures] = await db.query('SELECT shooting_id, total_amount FROM factures WHERE id = ?', [factureId]);
+    if (factures.length > 0 && factures[0].shooting_id) {
+        await db.query('UPDATE shootings SET total_price = ? WHERE id = ?', [factures[0].total_amount, factures[0].shooting_id]);
+    }
+}
+
 async function generateFactureRef() {
     const year = new Date().getFullYear();
     const [rows] = await pool.query("SELECT COUNT(*) as cnt FROM factures WHERE YEAR(date)=?", [year]);
@@ -9,7 +17,8 @@ async function generateFactureRef() {
 exports.getAll = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-      SELECT f.*, c.name AS client_name
+      SELECT f.*, c.name AS client_name,
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id) AS total_paid
       FROM factures f
       LEFT JOIN clients c ON f.client_id = c.id
       ORDER BY f.id DESC
@@ -44,15 +53,11 @@ exports.create = async (req, res) => {
         await conn.beginTransaction();
         const { client_id, date, status, shooting_id, items } = req.body;
 
-        const [co] = await conn.query('SELECT * FROM company_info LIMIT 1');
-        const company = co[0] || {};
-
         const reference = await generateFactureRef();
         const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
         const tax_amount = subtotal_amount * 0.19;
         const total_amount = subtotal_amount + tax_amount;
 
-        console.log('INSERT FACTURE:', reference);
         const [result] = await conn.query(
             `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
        VALUES (?,?,?,?,?,?,?,?)`,
@@ -62,12 +67,14 @@ exports.create = async (req, res) => {
 
         for (const item of (items || [])) {
             await conn.query(
-                "INSERT INTO invoice_items (type, parent_id, description, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?)",
-                [factureId, item.description, item.quantity, item.unit_price, item.total_price]
+                "INSERT INTO invoice_items (type, parent_id, description, days, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?,?)",
+                [factureId, item.description, item.days || null, item.quantity, item.unit_price, item.total_price]
             );
         }
 
+        await syncShootingPrice(factureId, conn);
         await conn.commit();
+
         const [newFac] = await conn.query('SELECT * FROM factures WHERE id=?', [factureId]);
         const [newItems] = await conn.query("SELECT * FROM invoice_items WHERE type='facture' AND parent_id=?", [factureId]);
         res.status(201).json({ ...newFac[0], items: newItems });
@@ -96,12 +103,14 @@ exports.update = async (req, res) => {
         await conn.query("DELETE FROM invoice_items WHERE type='facture' AND parent_id=?", [req.params.id]);
         for (const item of (items || [])) {
             await conn.query(
-                "INSERT INTO invoice_items (type, parent_id, description, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?)",
-                [req.params.id, item.description, item.quantity, item.unit_price, item.total_price]
+                "INSERT INTO invoice_items (type, parent_id, description, days, quantity, unit_price, total_price) VALUES ('facture',?,?,?,?,?,?)",
+                [req.params.id, item.description, item.days || null, item.quantity, item.unit_price, item.total_price]
             );
         }
 
+        await syncShootingPrice(req.params.id, conn);
         await conn.commit();
+
         const [updated] = await conn.query('SELECT * FROM factures WHERE id=?', [req.params.id]);
         const [updItems] = await conn.query("SELECT * FROM invoice_items WHERE type='facture' AND parent_id=?", [req.params.id]);
         res.json({ ...updated[0], items: updItems });
