@@ -54,9 +54,9 @@ exports.create = async (req, res) => {
         const { client_id, date, status, shooting_id, items } = req.body;
 
         const reference = await generateFactureRef();
-        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
-        const tax_amount = subtotal_amount * 0.19;
-        const total_amount = subtotal_amount + tax_amount;
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
+        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
 
         const [result] = await conn.query(
             `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
@@ -91,9 +91,9 @@ exports.update = async (req, res) => {
     try {
         await conn.beginTransaction();
         const { client_id, date, status, shooting_id, items } = req.body;
-        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
-        const tax_amount = subtotal_amount * 0.19;
-        const total_amount = subtotal_amount + tax_amount;
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
+        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
 
         await conn.query(
             'UPDATE factures SET client_id=?, date=?, status=?, shooting_id=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',

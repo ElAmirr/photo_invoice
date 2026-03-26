@@ -54,9 +54,9 @@ exports.create = async (req, res) => {
         const company = co[0] || {};
 
         const reference = await generateDevisRef();
-        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
-        const tax_amount = subtotal_amount * 0.19;
-        const total_amount = subtotal_amount + tax_amount;
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
+        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
 
         const [result] = await conn.query(
             `INSERT INTO devis (client_id, reference, date, valid_until, status, title, subtotal_amount, tax_amount, total_amount)
@@ -89,9 +89,9 @@ exports.update = async (req, res) => {
     try {
         await conn.beginTransaction();
         const { client_id, date, valid_until, status, items } = req.body;
-        const subtotal_amount = (items || []).reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0);
-        const tax_amount = subtotal_amount * 0.19;
-        const total_amount = subtotal_amount + tax_amount;
+        const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
+        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
 
         console.log('UPDATE DEVIS:', req.params.id);
         await conn.query(
@@ -190,7 +190,15 @@ exports.convertToFacture = async (req, res) => {
         const [facResult] = await conn.query(
             `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id)
        VALUES (?,?,CURDATE(),'unpaid',?,?,?,?,?)`,
-            [devis.client_id, ref, devis.subtotal_amount, devis.tax_amount, devis.total_amount, devis.id, shootingId]
+            [
+                devis.client_id,
+                ref,
+                Number(devis.subtotal_amount || 0),
+                Number(devis.tax_amount || 0),
+                Number(devis.total_amount || 0),
+                devis.id,
+                shootingId
+            ]
         );
         const factureId = facResult.insertId;
 

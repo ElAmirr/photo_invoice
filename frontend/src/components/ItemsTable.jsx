@@ -26,9 +26,9 @@ const ItemsTable = ({ items, setItems }) => {
         setItems(newItems);
     };
 
-    const subtotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-    const tax = subtotal * 0.19;
-    const total = subtotal + tax;
+    const subtotal = Number(items.reduce((sum, item) => sum + Number(item.total_price || 0), 0).toFixed(3));
+    const tax = Number((subtotal * 0.19).toFixed(3));
+    const total = Number((subtotal + tax).toFixed(3));
 
     return (
         <div style={{ marginTop: '20px' }}>

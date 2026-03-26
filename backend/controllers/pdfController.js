@@ -199,10 +199,6 @@ function buildHtml(type, data) {
 
   <div class="footer">
     <p>${company.name || ''} — ${company.address || ''} — ${company.phone || ''}</p>
-    <div style="margin-top: 10px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 5px;">
-       <span style="font-weight: 700; color: #6C63FF;">Shootix</span> 
-       <span>— Gestion Professionnelle de Studio</span>
-    </div>
   </div>
 </body>
 </html>`;
