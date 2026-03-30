@@ -30,6 +30,7 @@ jobs:
       - name: Build and Publish
         run: |
           npm --prefix frontend run build
-          npx electron-builder --publish always
+          npx electron-builder --publish always -c.mac.identity=null
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_SKIP_SIGNING: true
