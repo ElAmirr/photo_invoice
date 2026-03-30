@@ -205,7 +205,7 @@ const Devis = () => {
                                     <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yyyy') : '-'}</div>
                                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yyyy') : '-'}</div>
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: '700' }}>{Number(d.total_amount || 0).toFixed(3)} DT</td>
+                                <td style={{ textAlign: 'right', fontWeight: '700' }}>{Math.round(d.total_amount || 0)} TND</td>
                                 <td>
                                     <span className={`badge badge-${d.status}`}>
                                         {d.status === 'pending' ? 'En attente' : d.status === 'accepted' ? 'Accepté' : 'Rejeté'}

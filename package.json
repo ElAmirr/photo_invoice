@@ -26,7 +26,11 @@
             "frontend/dist/**/*",
             "package.json"
         ],
+        "win": {
+            "icon": "frontend/src/assets/logo.png"
+        },
         "mac": {
+            "icon": "frontend/src/assets/logo.png",
             "category": "public.app-category.business",
             "target": [
                 "dmg",

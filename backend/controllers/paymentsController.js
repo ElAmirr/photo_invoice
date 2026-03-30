@@ -1,5 +1,26 @@
 const pool = require('../db/connection');
 
+async function syncFactureStatus(factureId, conn) {
+    if (!factureId) return;
+    const db = conn || pool;
+
+    const [factures] = await db.query('SELECT total_amount FROM factures WHERE id = ?', [factureId]);
+    if (!factures.length) return;
+
+    const totalAmount = parseFloat(factures[0].total_amount || 0);
+    const [payments] = await db.query('SELECT SUM(amount) as total FROM payments WHERE facture_id = ? OR shooting_id = (SELECT shooting_id FROM factures WHERE id = ?)', [factureId, factureId]);
+    const totalPaid = parseFloat(payments[0].total || 0);
+
+    let status = 'unpaid';
+    if (totalPaid >= totalAmount && totalAmount > 0) {
+        status = 'paid';
+    } else if (totalPaid > 0) {
+        status = 'partial';
+    }
+
+    await db.query('UPDATE factures SET status = ? WHERE id = ?', [status, factureId]);
+}
+
 async function syncInvoiceStatus(shootingId, conn) {
     if (!shootingId) return;
     const db = conn || pool;
@@ -37,15 +58,31 @@ exports.getByShootingId = async (req, res) => {
     }
 };
 
+exports.getByFactureId = async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM payments WHERE facture_id=? ORDER BY payment_date ASC',
+            [req.params.factureId]
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 exports.create = async (req, res) => {
     try {
-        const { shooting_id, amount, payment_date, method, note } = req.body;
+        const { shooting_id, facture_id, amount, payment_date, method, note } = req.body;
         const [result] = await pool.query(
-            'INSERT INTO payments (shooting_id, amount, payment_date, method, note) VALUES (?,?,?,?,?)',
-            [shooting_id, amount, payment_date, method, note]
+            'INSERT INTO payments (shooting_id, facture_id, amount, payment_date, method, note) VALUES (?,?,?,?,?,?)',
+            [shooting_id || null, facture_id || null, amount, payment_date, method, note]
         );
 
-        await syncInvoiceStatus(shooting_id);
+        if (facture_id) {
+            await syncFactureStatus(facture_id);
+        } else {
+            await syncInvoiceStatus(shooting_id);
+        }
 
         const [rows] = await pool.query('SELECT * FROM payments WHERE id=?', [result.insertId]);
         res.status(201).json(rows[0]);
@@ -57,17 +94,20 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { amount, payment_date, method, note } = req.body;
-        // Need to find shooting_id first for sync
-        const [pRows] = await pool.query('SELECT shooting_id FROM payments WHERE id=?', [req.params.id]);
+        const [pRows] = await pool.query('SELECT shooting_id, facture_id FROM payments WHERE id=?', [req.params.id]);
         if (!pRows.length) return res.status(404).json({ error: 'Not found' });
-        const shootingId = pRows[0].shooting_id;
+        const { shooting_id: shootingId, facture_id: factureId } = pRows[0];
 
         await pool.query(
             'UPDATE payments SET amount=?, payment_date=?, method=?, note=? WHERE id=?',
             [amount, payment_date, method, note, req.params.id]
         );
 
-        await syncInvoiceStatus(shootingId);
+        if (factureId) {
+            await syncFactureStatus(factureId);
+        } else {
+            await syncInvoiceStatus(shootingId);
+        }
 
         const [rows] = await pool.query('SELECT * FROM payments WHERE id=?', [req.params.id]);
         res.json(rows[0]);
@@ -78,13 +118,17 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
     try {
-        const [pRows] = await pool.query('SELECT shooting_id FROM payments WHERE id=?', [req.params.id]);
+        const [pRows] = await pool.query('SELECT shooting_id, facture_id FROM payments WHERE id=?', [req.params.id]);
         if (!pRows.length) return res.status(404).json({ error: 'Not found' });
-        const shootingId = pRows[0].shooting_id;
+        const { shooting_id: shootingId, facture_id: factureId } = pRows[0];
 
         await pool.query('DELETE FROM payments WHERE id=?', [req.params.id]);
 
-        await syncInvoiceStatus(shootingId);
+        if (factureId) {
+            await syncFactureStatus(factureId);
+        } else {
+            await syncInvoiceStatus(shootingId);
+        }
 
         res.json({ message: 'Deleted' });
     } catch (err) {

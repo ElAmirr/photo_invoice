@@ -62,7 +62,7 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
         },
-        icon: path.join(__dirname, '..', 'frontend', 'public', 'favicon.ico') // Fallback icon
+        icon: path.join(__dirname, '..', 'frontend', 'src', 'assets', 'logo.png')
     });
 
     if (isDev) {
@@ -108,13 +108,27 @@ function checkUpdates() {
     });
 }
 
-app.on('ready', () => {
-    if (!isDev) {
-        startBackend();
-        checkUpdates();
-    }
-    createWindow();
-});
+const singleInstanceLock = app.requestSingleInstanceLock();
+
+if (!singleInstanceLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // Someone tried to run a second instance, we should focus our window.
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+        }
+    });
+
+    app.on('ready', () => {
+        if (!isDev) {
+            startBackend();
+            checkUpdates();
+        }
+        createWindow();
+    });
+}
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {
         app.quit();

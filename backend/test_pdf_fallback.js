@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Mock buildHtml and formatted helpers for testing
-function formatCurrency(n) { return parseFloat(n || 0).toFixed(3) + ' DT'; }
+function formatCurrency(n) { return Math.round(n || 0) + ' TND'; }
 function formatDate(d) { return new Date().toLocaleDateString(); }
 
 async function generatePdf(html) {

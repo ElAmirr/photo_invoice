@@ -95,13 +95,15 @@ function initDb(dbPath) {
 
         CREATE TABLE IF NOT EXISTS payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            shooting_id INTEGER NOT NULL,
+            shooting_id INTEGER,
+            facture_id INTEGER,
             amount DECIMAL(10,2) NOT NULL,
             payment_date TEXT NOT NULL,
             method TEXT,
             note TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (shooting_id) REFERENCES shootings(id)
+            FOREIGN KEY (shooting_id) REFERENCES shootings(id),
+            FOREIGN KEY (facture_id) REFERENCES factures(id)
         );
 
         CREATE TABLE IF NOT EXISTS shooting_freelancers (
@@ -114,6 +116,14 @@ function initDb(dbPath) {
             FOREIGN KEY (freelancer_id) REFERENCES freelancers(id)
         );
     `);
+
+    // Migration: add facture_id to payments if missing (existing DB schema upgrade)
+    const paymentsInfo = db.prepare("PRAGMA table_info(payments)").all();
+    const hasFactureId = paymentsInfo.some(col => col.name === 'facture_id');
+    if (!hasFactureId) {
+        db.exec('ALTER TABLE payments ADD COLUMN facture_id INTEGER;');
+        console.log('DB migration: added payments.facture_id');
+    }
 
     console.log('Successfully initialized database schema.');
     return db;

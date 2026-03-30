@@ -66,7 +66,7 @@ const CompanySettings = () => {
 
     return (
         <div style={{ maxWidth: '800px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px' }}>Paramètres de l'entreprise</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px' }}>Mon Studio</h1>
 
             <form className="card" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '50px', marginBottom: '20px' }}>
@@ -97,7 +97,7 @@ const CompanySettings = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600' }}>Nom de l'entreprise</label>
+                    <label style={{ fontSize: '14px', fontWeight: '600' }}>Nom du studio</label>
                     <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
                         name="name" value={form.name} onChange={handleChange} required />
                 </div>
@@ -121,7 +121,7 @@ const CompanySettings = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600' }}>Matricule Fiscale</label>
+                    <label style={{ fontSize: '14px', fontWeight: '600' }}>Matricule fiscale</label>
                     <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
                         name="matricule_fiscale" value={form.matricule_fiscale} onChange={handleChange} />
                 </div>
@@ -135,7 +135,7 @@ const CompanySettings = () => {
                 <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
                     <button type="submit" className="btn btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>
                         <Save size={18} />
-                        {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                        {saving ? 'Enregistrement...' : 'Enregistrer les paramètres du studio'}
                     </button>
                 </div>
             </form>

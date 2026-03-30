@@ -322,13 +322,13 @@ const Shootings = () => {
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.location}</div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: '600' }}>{Number(s.total_price || 0).toFixed(3)} DT</div>
+                                        <div style={{ fontWeight: '600' }}>{Math.round(s.total_price || 0)} TND</div>
                                         <div style={{ fontSize: '11px', color: Number(s.total_paid || 0) >= Number(s.total_price || 0) ? '#10b981' : '#f59e0b' }}>
-                                            Payé: {Number(s.total_paid || 0).toFixed(3)} DT
+                                            Payé: {Math.round(s.total_paid || 0)} TND
                                         </div>
                                         {Number(s.total_price || 0) - Number(s.total_paid || 0) > 0 && (
                                             <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
-                                                Reste: {(Number(s.total_price || 0) - Number(s.total_paid || 0)).toFixed(3)} DT
+                                                Reste: {Math.round(Number(s.total_price || 0) - Number(s.total_paid || 0))} TND
                                             </div>
                                         )}
                                     </td>
@@ -380,7 +380,7 @@ const Shootings = () => {
                             <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.shooting_date} onChange={e => setForm({ ...form, shooting_date: e.target.value })} required />
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Prix Total (DT)</label>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Prix Total (TND)</label>
                             <input type="number" step="0.001" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.total_price} onChange={e => setForm({ ...form, total_price: e.target.value })} required />
                         </div>
                     </div>
@@ -428,9 +428,9 @@ const Shootings = () => {
                             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Total client</p>
-                                    <h4 style={{ fontSize: '18px', fontWeight: '700' }}>{totalClient.toFixed(3)} DT</h4>
+                                    <h4 style={{ fontSize: '18px', fontWeight: '700' }}>{Math.round(totalClient)} TND</h4>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-                                        <p style={{ fontSize: '11px', color: '#10b981' }}>Payé: {totalPaidClient.toFixed(3)} DT</p>
+                                        <p style={{ fontSize: '11px', color: '#10b981' }}>Payé: {Math.round(totalPaidClient)} TND</p>
                                         {detailModal.data.start_time && (
                                             <span style={{ fontSize: '11px', color: 'var(--text-muted)', backgroundColor: 'var(--border)', padding: '2px 6px', borderRadius: '4px' }}>
                                                 🕒 {detailModal.data.start_time} ({detailModal.data.duration}h)
@@ -441,13 +441,13 @@ const Shootings = () => {
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Reste à payer</p>
                                     <h4 style={{ fontSize: '18px', fontWeight: '700', color: (totalClient - totalPaidClient) > 0 ? '#ef4444' : '#10b981' }}>
-                                        {(totalClient - totalPaidClient).toFixed(3)} DT
+                                        {Math.round(totalClient - totalPaidClient)} TND
                                     </h4>
                                 </div>
                                 <div style={{ flex: 1, minWidth: '150px', padding: '16px', backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #10b981' }}>
                                     <p style={{ fontSize: '12px', color: '#047857', marginBottom: '4px', fontWeight: '600' }}>Bénéfice Net</p>
                                     <h4 style={{ fontSize: '20px', fontWeight: '800', color: '#059669' }}>
-                                        {netProfit.toFixed(3)} DT
+                                        {Math.round(netProfit)} TND
                                     </h4>
                                 </div>
                             </div>
@@ -470,7 +470,7 @@ const Shootings = () => {
                                             {detailModal.data.payments.map(p => (
                                                 <tr key={p.id}>
                                                     <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : '-'}</td>
-                                                    <td style={{ fontWeight: '600' }}>{Number(p.amount || 0).toFixed(3)} DT</td>
+                                                    <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                                     <td>{p.method}</td>
                                                     <td>
                                                         <button onClick={() => handleDeletePayment(p.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -519,8 +519,8 @@ const Shootings = () => {
                                             {detailModal.data.freelancers.map(f => (
                                                 <tr key={f.freelancer_id}>
                                                     <td>{f.name}</td>
-                                                    <td style={{ fontWeight: '600' }}>{Number(f.agreed_amount || 0).toFixed(3)} DT</td>
-                                                    <td style={{ color: Number(f.paid_amount || 0) >= Number(f.agreed_amount || 0) ? '#10b981' : '#f59e0b' }}>{Number(f.paid_amount || 0).toFixed(3)} DT</td>
+                                                    <td style={{ fontWeight: '600' }}>{Math.round(f.agreed_amount || 0)} TND</td>
+                                                    <td style={{ color: Number(f.paid_amount || 0) >= Number(f.agreed_amount || 0) ? '#10b981' : '#f59e0b' }}>{Math.round(f.paid_amount || 0)} TND</td>
                                                     <td>
                                                         <div style={{ display: 'flex', gap: '6px' }}>
                                                             <button

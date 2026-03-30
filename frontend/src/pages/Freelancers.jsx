@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
-import { Plus, Edit, Trash2, Search, Phone, Briefcase } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Phone, Briefcase, Eye } from 'lucide-react';
 
 const Freelancers = () => {
     const [freelancers, setFreelancers] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ isOpen: false, data: null });
+    const [detailModal, setDetailModal] = useState({ isOpen: false, data: null, analytics: null });
     const [form, setForm] = useState({ name: '', phone: '', specialty: '' });
 
     const fetchFreelancers = () => {
@@ -28,6 +29,17 @@ const Freelancers = () => {
     };
 
     const handleClose = () => setModal({ isOpen: false, data: null });
+
+    const handleOpenDetail = async (data) => {
+        try {
+            const res = await api.get(`/freelancers/${data.id}/analytics`);
+            setDetailModal({ isOpen: true, data, analytics: res.data });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleCloseDetail = () => setDetailModal({ isOpen: false, data: null, analytics: null });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -56,6 +68,10 @@ const Freelancers = () => {
         f.name.toLowerCase().includes(search.toLowerCase()) ||
         f.specialty.toLowerCase().includes(search.toLowerCase())
     );
+
+    const formatCurrency = (value) => {
+        return Math.round(value || 0) + ' TND';
+    };
 
     return (
         <div>
@@ -107,6 +123,9 @@ const Freelancers = () => {
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => handleOpenDetail(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
+                                            <Eye size={16} />
+                                        </button>
                                         <button onClick={() => handleOpen(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
                                             <Edit size={16} />
                                         </button>
@@ -152,6 +171,61 @@ const Freelancers = () => {
                         {modal.data ? 'Mettre à jour' : 'Créer le freelancer'}
                     </button>
                 </form>
+            </Modal>
+
+            <Modal
+                isOpen={detailModal.isOpen}
+                onClose={handleCloseDetail}
+                title={`Détails - ${detailModal.data?.name}`}
+            >
+                {detailModal.analytics && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Missions</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>
+                                    {detailModal.analytics.total_assignments_count}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    Projets assignés
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Montant convenu</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#3b82f6' }}>
+                                    {formatCurrency(detailModal.analytics.total_agreed_amount)}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    Total des missions
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Montant payé</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
+                                    {formatCurrency(detailModal.analytics.total_paid_amount)}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    {detailModal.analytics.total_agreed_amount > 0
+                                        ? `${Math.round((detailModal.analytics.total_paid_amount / detailModal.analytics.total_agreed_amount) * 100)}% versé`
+                                        : 'N/A'
+                                    }
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #f59e0b' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>À payer</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>
+                                    {formatCurrency(detailModal.analytics.balance_owed)}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    Reste dû
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={handleCloseDetail} className="btn btn-primary" style={{ justifyContent: 'center', marginTop: '10px' }}>
+                            Fermer
+                        </button>
+                    </div>
+                )}
             </Modal>
         </div>
     );

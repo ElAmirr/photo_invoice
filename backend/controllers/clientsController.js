@@ -55,3 +55,34 @@ exports.remove = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.getAnalytics = async (req, res) => {
+    try {
+        const clientId = req.params.id;
+        
+        // Get factures and payments aggregates
+        const [factureData] = await pool.query(`
+            SELECT 
+                COUNT(DISTINCT f.id) as total_factures_count,
+                COALESCE(SUM(f.total_amount), 0) as total_factures_amount,
+                COUNT(DISTINCT CASE WHEN f.shooting_id IS NOT NULL THEN f.shooting_id END) as shooting_count,
+                COALESCE(SUM(p.amount), 0) as total_paid
+            FROM factures f
+            LEFT JOIN payments p ON (p.facture_id = f.id OR p.shooting_id = f.shooting_id)
+            WHERE f.client_id = ?
+        `, [clientId]);
+
+        const analytics = factureData[0];
+        const balance_due = analytics.total_factures_amount - analytics.total_paid;
+
+        res.json({
+            total_factures_count: analytics.total_factures_count || 0,
+            total_factures_amount: analytics.total_factures_amount || 0,
+            total_paid: analytics.total_paid || 0,
+            balance_due: balance_due || 0,
+            shooting_count: analytics.shooting_count || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

@@ -46,8 +46,8 @@ const ItemsTable = ({ items, setItems }) => {
                             <th style={{ width: '35%' }}>Description</th>
                             <th style={{ width: '15%', textAlign: 'center' }}>Nbre Jours</th>
                             <th style={{ width: '10%', textAlign: 'center' }}>Qté</th>
-                            <th style={{ width: '15%', textAlign: 'right' }}>Prix Unit. (DT)</th>
-                            <th style={{ width: '20%', textAlign: 'right' }}>Total (DT)</th>
+                            <th style={{ width: '15%', textAlign: 'right' }}>Prix Unit. (TND)</th>
+                            <th style={{ width: '20%', textAlign: 'right' }}>Total (TND)</th>
                             <th style={{ width: '5%', textAlign: 'center' }}></th>
                         </tr>
                     </thead>
@@ -88,7 +88,7 @@ const ItemsTable = ({ items, setItems }) => {
                                     />
                                 </td>
                                 <td style={{ textAlign: 'right', fontWeight: '600' }}>
-                                    {Number(item.total_price || 0).toFixed(3)}
+                                    {Math.round(item.total_price || 0)}
                                 </td>
                                 <td style={{ textAlign: 'center' }}>
                                     <button
@@ -106,18 +106,18 @@ const ItemsTable = ({ items, setItems }) => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <div className="card" style={{ minWidth: '240px', backgroundColor: 'var(--secondary)', color: 'white', padding: '20px' }}>
+                <div className="card" style={{ minWidth: '240px', background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)', color: 'white', padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                         <span>Total HT</span>
-                        <span>{Number(subtotal || 0).toFixed(3)} DT</span>
+                        <span>{Math.round(subtotal || 0)} TND</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
                         <span>TVA (19%)</span>
-                        <span>{Number(tax || 0).toFixed(3)} DT</span>
+                        <span>{Math.round(tax || 0)} TND</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', color: 'var(--primary-light)' }}>
-                        <span>TOTAL TTC</span>
-                        <span>{Number(total || 0).toFixed(3)} DT</span>
+                        <span>TOTAL TTC </span>
+                        <span>{Math.round(total || 0)} TND</span>
                     </div>
                 </div>
             </div>

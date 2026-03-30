@@ -16,12 +16,12 @@ import logo from '../assets/logo.png';
 const Sidebar = () => {
     const links = [
         { to: '/', icon: <LayoutDashboard size={20} />, label: 'Tableau de bord' },
-        { to: '/clients', icon: <Users size={20} />, label: 'Clients' },
         { to: '/shootings', icon: <Camera size={20} />, label: 'Shooting' },
         { to: '/devis', icon: <Quote size={20} />, label: 'Devis' },
         { to: '/factures', icon: <FileText size={20} />, label: 'Factures' },
+        { to: '/clients', icon: <Users size={20} />, label: 'Clients' },
         { to: '/freelancers', icon: <UserSquare2 size={20} />, label: 'Freelancers' },
-        { to: '/settings', icon: <Settings size={20} />, label: 'Paramètres' },
+        { to: '/settings', icon: <Settings size={20} />, label: 'Mon Studio' },
     ];
 
     return (
@@ -56,7 +56,7 @@ const Sidebar = () => {
                     <span style={{
                         fontSize: '24px',
                         fontWeight: '800',
-                        color: 'rgb(189, 0, 251)',
+                        color: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)',
                         letterSpacing: '1px'
                     }}>SHOOTIX</span>
                 </div>
@@ -98,7 +98,7 @@ const Sidebar = () => {
                             fontSize: '14px',
                             fontWeight: isActive ? '600' : '400',
                             color: isActive ? 'white' : '#94a3b8',
-                            backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                            background: isActive ? 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)' : 'transparent',
                             transition: 'all 0.2s'
                         })}
                     >

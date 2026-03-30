@@ -68,14 +68,14 @@ const Dashboard = () => {
             <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '40px' }}>
                 <StatCard
                     title="Chiffre d'affaires (Facturé)"
-                    value={`${Number(stats.invoicedRevenue || 0).toFixed(3)} DT`}
+                    value={`${Math.round(stats.invoicedRevenue || 0)} TND`}
                     icon={<TrendingUp size={24} />}
                     color="#6C63FF"
                     subValue="Montant total des factures"
                 />
                 <StatCard
                     title="Chiffre d'affaires (Encaissé)"
-                    value={`${Number(stats.receivedRevenue || 0).toFixed(3)} DT`}
+                    value={`${Math.round(stats.receivedRevenue || 0)} TND`}
                     icon={<Wallet size={24} />}
                     color="#10b981"
                     subValue="Total des paiements reçus"
@@ -94,7 +94,7 @@ const Dashboard = () => {
                 />
                 <StatCard
                     title="Bénéfice Net"
-                    value={`${Number(stats.profit || 0).toFixed(3)} DT`}
+                    value={`${Math.round(stats.profit || 0)} TND`}
                     icon={<TrendingUp size={24} />}
                     color="#f59e0b"
                     subValue="Encaissé - Frais freelancers"
@@ -133,13 +133,13 @@ const Dashboard = () => {
                                     <tr key={s.id}>
                                         <td style={{ fontWeight: '600' }}>{s.title}</td>
                                         <td style={{ fontSize: '13px' }}>{s.client_name}</td>
-                                        <td style={{ fontWeight: '600', fontSize: '13px' }}>{totalClient.toFixed(3)} DT</td>
-                                        <td style={{ color: '#10b981', fontSize: '13px' }}>{totalPaid.toFixed(3)} DT</td>
+                                        <td style={{ fontWeight: '600', fontSize: '13px' }}>{Math.round(totalClient)} TND</td>
+                                        <td style={{ color: '#10b981', fontSize: '13px' }}>{Math.round(totalPaid)} TND</td>
                                         <td style={{ color: remaining > 0 ? '#ef4444' : '#10b981', fontWeight: '700', fontSize: '13px' }}>
-                                            {remaining.toFixed(3)} DT
+                                            {Math.round(remaining)} TND
                                         </td>
                                         <td style={{ color: '#059669', fontWeight: '800', fontSize: '14px', backgroundColor: '#ecfdf5' }}>
-                                            {netProfit.toFixed(3)} DT
+                                            {Math.round(netProfit)} TND
                                         </td>
                                         <td>
                                             <span className={`badge badge-${s.status}`} style={{ fontSize: '10px' }}>
@@ -171,7 +171,7 @@ const Dashboard = () => {
                                     <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{f.client_name}</p>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <p style={{ fontWeight: '700', color: 'var(--secondary)', fontSize: '14px' }}>{Number(f.total_amount || 0).toFixed(3)} DT</p>
+                                    <p style={{ fontWeight: '700', color: 'var(--secondary)', fontSize: '14px' }}>{Math.round(f.total_amount || 0)} TND</p>
                                     <span className={`badge badge-${f.status}`} style={{ fontSize: '10px' }}>
                                         {f.status === 'paid' ? 'Payée' : f.status === 'partial' ? 'Partielle' : 'Impayée'}
                                     </span>

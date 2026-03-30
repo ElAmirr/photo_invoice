@@ -2,6 +2,7 @@ const router = require('express').Router();
 const ctrl = require('../controllers/paymentsController');
 
 router.get('/shooting/:shootingId', ctrl.getByShootingId);
+router.get('/facture/:factureId', ctrl.getByFactureId);
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);

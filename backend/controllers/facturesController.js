@@ -10,15 +10,41 @@ async function syncShootingPrice(factureId, conn) {
 
 async function generateFactureRef() {
     const year = new Date().getFullYear();
-    const [rows] = await pool.query("SELECT COUNT(*) as cnt FROM factures WHERE YEAR(date)=?", [year]);
-    return `FAC-${year}-${String(rows[0].cnt + 1).padStart(3, '0')}`;
+    let reference;
+    let attempt = 0;
+    const maxAttempts = 10;
+    
+    while (attempt < maxAttempts) {
+        // Count factures for the current year using SQLite-compatible syntax
+        const [rows] = await pool.query(
+            "SELECT COUNT(*) as cnt FROM factures WHERE CAST(strftime('%Y', date) AS INTEGER) = ?",
+            [year]
+        );
+        const count = rows[0].cnt + 1 + attempt;
+        reference = `FAC-${year}-${String(count).padStart(3, '0')}`;
+        
+        // Check if this reference already exists
+        const [existing] = await pool.query(
+            "SELECT id FROM factures WHERE reference = ?",
+            [reference]
+        );
+        
+        if (!existing || existing.length === 0) {
+            return reference;
+        }
+        
+        attempt++;
+    }
+    
+    // Fallback: use timestamp-based unique reference
+    return `FAC-${year}-${Date.now()}`;
 }
 
 exports.getAll = async (req, res) => {
     try {
         const [rows] = await pool.query(`
       SELECT f.*, c.name AS client_name,
-        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id) AS total_paid
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id) AS total_paid
       FROM factures f
       LEFT JOIN clients c ON f.client_id = c.id
       ORDER BY f.id DESC
@@ -34,9 +60,12 @@ exports.getOne = async (req, res) => {
         const [rows] = await pool.query(`
       SELECT f.*, c.name AS client_name, c.email AS client_email,
              c.phone AS client_phone, c.address AS client_address,
-             c.matricule_fiscale AS client_mf
+             c.matricule_fiscale AS client_mf,
+             s.title AS shooting_title,
+             COALESCE((SELECT SUM(amount) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id), 0) AS total_paid
       FROM factures f
       LEFT JOIN clients c ON f.client_id = c.id
+      LEFT JOIN shootings s ON f.shooting_id = s.id
       WHERE f.id=?
     `, [req.params.id]);
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
@@ -53,17 +82,36 @@ exports.create = async (req, res) => {
         await conn.beginTransaction();
         const { client_id, date, status, shooting_id, items } = req.body;
 
-        const reference = await generateFactureRef();
+        let reference;
+        let factureInsertResult;
         const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
         const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
         const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
 
-        const [result] = await conn.query(
-            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
+        for (let attempt = 0; attempt < 5; attempt++) {
+            reference = await generateFactureRef();
+            try {
+                const [result] = await conn.query(
+                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
        VALUES (?,?,?,?,?,?,?,?)`,
-            [client_id, reference, date, status || 'unpaid', subtotal_amount, tax_amount, total_amount, shooting_id || null]
-        );
-        const factureId = result.insertId;
+                    [client_id, reference, date, status || 'unpaid', subtotal_amount, tax_amount, total_amount, shooting_id || null]
+                );
+                factureInsertResult = result;
+                break;
+            } catch (err) {
+                if (err.message && err.message.includes('UNIQUE constraint failed: factures.reference')) {
+                    // collision detected, try another reference
+                    continue;
+                }
+                throw err;
+            }
+        }
+
+        if (!factureInsertResult) {
+            throw new Error('Unable to generate unique facture reference after several attempts');
+        }
+
+        const factureId = factureInsertResult.insertId;
 
         for (const item of (items || [])) {
             await conn.query(

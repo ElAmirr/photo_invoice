@@ -65,7 +65,7 @@ function formatDate(d) {
 }
 
 function formatCurrency(n) {
-  return parseFloat(n || 0).toFixed(3) + ' DT';
+  return Math.round(n || 0) + ' TND';
 }
 
 function buildHtml(type, data) {

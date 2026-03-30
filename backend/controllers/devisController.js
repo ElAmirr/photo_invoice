@@ -3,11 +3,34 @@ const pool = require('../db/connection');
 // Auto-generate reference like DEV-2026-001
 async function generateDevisRef() {
     const year = new Date().getFullYear();
-    const [rows] = await pool.query(
-        "SELECT COUNT(*) as cnt FROM devis WHERE YEAR(date) = ?", [year]
-    );
-    const count = rows[0].cnt + 1;
-    return `DEV-${year}-${String(count).padStart(3, '0')}`;
+    let reference;
+    let attempt = 0;
+    const maxAttempts = 10;
+    
+    while (attempt < maxAttempts) {
+        // Count devis for the current year using SQLite-compatible syntax
+        const [rows] = await pool.query(
+            "SELECT COUNT(*) as cnt FROM devis WHERE CAST(strftime('%Y', date) AS INTEGER) = ?",
+            [year]
+        );
+        const count = rows[0].cnt + 1 + attempt;
+        reference = `DEV-${year}-${String(count).padStart(3, '0')}`;
+        
+        // Check if this reference already exists
+        const [existing] = await pool.query(
+            "SELECT id FROM devis WHERE reference = ?",
+            [reference]
+        );
+        
+        if (!existing || existing.length === 0) {
+            return reference;
+        }
+        
+        attempt++;
+    }
+    
+    // Fallback: use timestamp-based unique reference
+    return `DEV-${year}-${Date.now()}`;
 }
 
 exports.getAll = async (req, res) => {
@@ -184,22 +207,48 @@ exports.convertToFacture = async (req, res) => {
 
         // 2. Create the Facture linked to the Shooting
         const year = new Date().getFullYear();
-        const [cnt] = await conn.query("SELECT COUNT(*) as c FROM factures WHERE YEAR(date)=?", [year]);
-        const ref = `FAC-${year}-${String(cnt[0].c + 1).padStart(3, '0')}`;
+        let facRef;
+        let facResult;
 
-        const [facResult] = await conn.query(
-            `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id)
-       VALUES (?,?,CURDATE(),'unpaid',?,?,?,?,?)`,
-            [
-                devis.client_id,
-                ref,
-                Number(devis.subtotal_amount || 0),
-                Number(devis.tax_amount || 0),
-                Number(devis.total_amount || 0),
-                devis.id,
-                shootingId
-            ]
-        );
+        for (let attempt = 0; attempt < 5; attempt++) {
+            // pick next available index based on max existing reference
+            const [maxRef] = await conn.query(
+                "SELECT MAX(CAST(SUBSTR(reference, 10) AS INTEGER)) AS maxIndex FROM factures WHERE reference LIKE ?",
+                [`FAC-${year}-%`]
+            );
+            const nextIndex = (maxRef[0].maxIndex || 0) + 1;
+            facRef = `FAC-${year}-${String(nextIndex).padStart(3, '0')}`;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const ins = await conn.query(
+                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id)
+                        VALUES (?,?,?, 'unpaid',?,?,?,?,?)`,
+                    [
+                        devis.client_id,
+                        facRef,
+                        today,
+                        Number(devis.subtotal_amount || 0),
+                        Number(devis.tax_amount || 0),
+                        Number(devis.total_amount || 0),
+                        devis.id,
+                        shootingId
+                    ]
+                );
+                facResult = ins[0];
+                break;
+            } catch (err) {
+                if (err.message && err.message.includes('UNIQUE constraint failed: factures.reference')) {
+                    // Reference collision; retry with a fresh max-index
+                    continue;
+                }
+                throw err;
+            }
+        }
+
+        if (!facResult) {
+            throw new Error('Unable to create facture with unique reference after multiple attempts');
+        }
         const factureId = facResult.insertId;
 
         // 3. Copy items

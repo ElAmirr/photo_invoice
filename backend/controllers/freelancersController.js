@@ -55,3 +55,31 @@ exports.remove = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.getAnalytics = async (req, res) => {
+    try {
+        const freelancerId = req.params.id;
+        
+        // Get shooting freelancer assignments and calculate earnings
+        const [analyticsData] = await pool.query(`
+            SELECT 
+                COUNT(sf.id) as total_assignments_count,
+                COALESCE(SUM(sf.agreed_amount), 0) as total_agreed_amount,
+                COALESCE(SUM(sf.paid_amount), 0) as total_paid_amount
+            FROM shooting_freelancers sf
+            WHERE sf.freelancer_id = ?
+        `, [freelancerId]);
+
+        const analytics = analyticsData[0];
+        const balance_owed = analytics.total_agreed_amount - analytics.total_paid_amount;
+
+        res.json({
+            total_assignments_count: analytics.total_assignments_count || 0,
+            total_agreed_amount: analytics.total_agreed_amount || 0,
+            total_paid_amount: analytics.total_paid_amount || 0,
+            balance_owed: balance_owed || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

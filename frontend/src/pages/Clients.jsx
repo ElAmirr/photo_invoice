@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
-import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin, Eye } from 'lucide-react';
 
 const Clients = () => {
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ isOpen: false, data: null });
+    const [detailModal, setDetailModal] = useState({ isOpen: false, data: null, analytics: null });
     const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', matricule_fiscale: '' });
 
     const fetchClients = () => {
@@ -28,6 +29,17 @@ const Clients = () => {
     };
 
     const handleClose = () => setModal({ isOpen: false, data: null });
+
+    const handleOpenDetail = async (data) => {
+        try {
+            const res = await api.get(`/clients/${data.id}/analytics`);
+            setDetailModal({ isOpen: true, data, analytics: res.data });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleCloseDetail = () => setDetailModal({ isOpen: false, data: null, analytics: null });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -56,6 +68,10 @@ const Clients = () => {
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.email.toLowerCase().includes(search.toLowerCase())
     );
+
+    const formatCurrency = (value) => {
+        return Math.round(value || 0) + ' TND';
+    };
 
     return (
         <div>
@@ -116,6 +132,9 @@ const Clients = () => {
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => handleOpenDetail(c)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
+                                            <Eye size={16} />
+                                        </button>
                                         <button onClick={() => handleOpen(c)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
                                             <Edit size={16} />
                                         </button>
@@ -178,6 +197,61 @@ const Clients = () => {
                         {modal.data ? 'Mettre à jour' : 'Créer le client'}
                     </button>
                 </form>
+            </Modal>
+
+            <Modal
+                isOpen={detailModal.isOpen}
+                onClose={handleCloseDetail}
+                title={`Détails - ${detailModal.data?.name}`}
+            >
+                {detailModal.analytics && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Factures</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>
+                                    {detailModal.analytics.total_factures_count}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    {formatCurrency(detailModal.analytics.total_factures_amount)}
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Payé</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
+                                    {formatCurrency(detailModal.analytics.total_paid)}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    {detailModal.analytics.total_factures_amount > 0 
+                                        ? `${Math.round((detailModal.analytics.total_paid / detailModal.analytics.total_factures_amount) * 100)}% payé`
+                                        : 'N/A'
+                                    }
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #ef4444' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>À payer</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>
+                                    {formatCurrency(detailModal.analytics.balance_due)}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    Reste à percevoir
+                                </div>
+                            </div>
+                            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Shootings</div>
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#8b5cf6' }}>
+                                    {detailModal.analytics.shooting_count}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    Projets liés
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={handleCloseDetail} className="btn btn-primary" style={{ justifyContent: 'center', marginTop: '10px' }}>
+                            Fermer
+                        </button>
+                    </div>
+                )}
             </Modal>
         </div>
     );

@@ -32,6 +32,7 @@ const Factures = () => {
         shooting_id: ''
     });
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
+    const [paymentForm, setPaymentForm] = useState({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
 
     const fetchData = async () => {
         try {
@@ -87,12 +88,67 @@ const Factures = () => {
         setModal({ isOpen: true, data });
     };
 
+    const loadPaymentsForFacture = async (factureId, shootingId) => {
+        if (!factureId && !shootingId) return [];
+        try {
+            if (factureId) {
+                const res = await api.get(`/payments/facture/${factureId}`);
+                return res.data;
+            }
+            const res = await api.get(`/payments/shooting/${shootingId}`);
+            return res.data;
+        } catch (err) {
+            console.error('Erreur chargement paiements:', err);
+            return [];
+        }
+    };
+
     const handleOpenDetail = async (id) => {
         try {
             const res = await api.get(`/factures/${id}`);
-            setDetailModal({ isOpen: true, data: res.data });
+            const payments = await loadPaymentsForFacture(res.data.id, res.data.shooting_id);
+            setDetailModal({ isOpen: true, data: { ...res.data, payments } });
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleAddPayment = async (e) => {
+        e.preventDefault();
+        if (!detailModal.data?.shooting_id && !detailModal.data?.id) {
+            return alert('Impossible d\'ajouter un paiement: facture non valide.');
+        }
+        try {
+            await api.post('/payments', {
+                shooting_id: detailModal.data.shooting_id || null,
+                facture_id: detailModal.data.id || null,
+                amount: Number(paymentForm.amount),
+                payment_date: paymentForm.payment_date,
+                method: paymentForm.method,
+                note: paymentForm.note
+            });
+            const refreshed = await api.get(`/factures/${detailModal.data.id}`);
+            const payments = await loadPaymentsForFacture(refreshed.data.id, refreshed.data.shooting_id);
+            setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
+            setPaymentForm({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors de l\'ajout du paiement : ' + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleDeletePayment = async (id) => {
+        if (!window.confirm('Supprimer ce paiement ?')) return;
+        try {
+            await api.delete(`/payments/${id}`);
+            const refreshed = await api.get(`/factures/${detailModal.data.id}`);
+            const payments = await loadPaymentsForFacture(refreshed.data.id, refreshed.data.shooting_id);
+            setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors de la suppression du paiement : ' + (err.response?.data?.error || err.message));
         }
     };
 
@@ -185,18 +241,18 @@ const Factures = () => {
                                 <td>{f.client_name}</td>
                                 <td>{f.date ? format(new Date(f.date), 'dd/MM/yyyy') : '-'}</td>
                                 <td style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: '700' }}>{Number(f.total_amount || 0).toFixed(3)} DT</div>
-                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {Number(f.total_paid || 0).toFixed(3)} DT</div>
+                                    <div style={{ fontWeight: '700' }}>{Math.round(f.total_amount || 0)} TND</div>
+                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {Math.round(f.total_paid || 0)} TND</div>
                                     {Number(f.total_amount || 0) - Number(f.total_paid || 0) > 0 && (
                                         <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
-                                            Reste: {(Number(f.total_amount || 0) - Number(f.total_paid || 0)).toFixed(3)} DT
+                                            Reste: {Math.round(Number(f.total_amount || 0) - Number(f.total_paid || 0))} TND
                                         </div>
                                     )}
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                         <button onClick={() => handleOpenDetail(f.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
-                                            <ChevronRight size={16} />
+                                            <Eye size={16} />
                                         </button>
                                         <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
                                             <FileDown size={16} />
@@ -269,6 +325,21 @@ const Factures = () => {
             >
                 {detailModal.data && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 180px', minWidth: '180px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Total TTC</p>
+                                <h4 style={{ fontSize: '18px', fontWeight: '700' }}>{Math.round(detailModal.data.total_amount)} TND</h4>
+                            </div>
+                            <div style={{ flex: '1 1 180px', minWidth: '180px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Payé</p>
+                                <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round(detailModal.data.total_paid || 0)} TND</h4>
+                            </div>
+                            <div style={{ flex: '1 1 180px', minWidth: '180px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                                <p style={{ fontSize: '12px', color: '#b91c1c', marginBottom: '4px' }}>Reste</p>
+                                <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#b91c1c' }}>{Math.round(Number(detailModal.data.total_amount || 0) - Number(detailModal.data.total_paid || 0))} TND</h4>
+                            </div>
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Client</p>
@@ -291,6 +362,89 @@ const Factures = () => {
                             </div>
                         )}
 
+                        <div style={{ padding: '16px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <DollarSign size={18} color="var(--primary)" /> Paiements liés
+                            </h3>
+
+                            <table style={{ fontSize: '13px', marginBottom: '12px' }}>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Montant</th>
+                                        <th>Méthode</th>
+                                        <th>Note</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(detailModal.data.payments || []).map(p => (
+                                        <tr key={p.id}>
+                                            <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : '-'}</td>
+                                            <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
+                                            <td>{p.method}</td>
+                                            <td>{p.note || '-'}</td>
+                                            <td>
+                                                <button onClick={() => handleDeletePayment(p.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }} title="Supprimer">x</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(detailModal.data.payments || []).length === 0 && (
+                                        <tr><td colSpan="5" style={{ color: 'var(--text-muted)', padding: '10px' }}>Aucun paiement enregistré.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+
+                            <form onSubmit={handleAddPayment} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr auto', gap: '8px', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Montant</label>
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }}
+                                        value={paymentForm.amount}
+                                        onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Date</label>
+                                    <input
+                                        type="date"
+                                        style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }}
+                                        value={paymentForm.payment_date}
+                                        onChange={e => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Méthode</label>
+                                    <select
+                                        style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }}
+                                        value={paymentForm.method}
+                                        onChange={e => setPaymentForm({ ...paymentForm, method: e.target.value })}
+                                    >
+                                        <option value="cash">Espèces</option>
+                                        <option value="virement">Virement</option>
+                                        <option value="cheque">Chèque</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Note</label>
+                                    <input
+                                        type="text"
+                                        style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }}
+                                        value={paymentForm.note}
+                                        onChange={e => setPaymentForm({ ...paymentForm, note: e.target.value })}
+                                        placeholder="Optionnel"
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary" style={{ padding: '8px' }}>
+                                    <Plus size={14} />
+                                </button>
+                            </form>
+                        </div>
+
                         <div>
                             <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Détail des prestations</h3>
                             <table style={{ fontSize: '13px' }}>
@@ -307,8 +461,8 @@ const Factures = () => {
                                         <tr key={idx}>
                                             <td>{item.description}</td>
                                             <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                                            <td style={{ textAlign: 'right' }}>{Number(item.unit_price).toFixed(3)} DT</td>
-                                            <td style={{ textAlign: 'right', fontWeight: '600' }}>{Number(item.total_price).toFixed(3)} DT</td>
+                                            <td style={{ textAlign: 'right' }}>{Math.round(item.unit_price)} TND</td>
+                                            <td style={{ textAlign: 'right', fontWeight: '600' }}>{Math.round(item.total_price)} TND</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -318,15 +472,15 @@ const Factures = () => {
                         <div style={{ alignSelf: 'flex-end', width: '250px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                                 <span>Total HT:</span>
-                                <span>{Number(detailModal.data.subtotal_amount).toFixed(3)} DT</span>
+                                <span>{Math.round(detailModal.data.subtotal_amount)} TND</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                                 <span>TVA (19%):</span>
-                                <span>{Number(detailModal.data.tax_amount).toFixed(3)} DT</span>
+                                <span>{Math.round(detailModal.data.tax_amount)} TND</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '4px' }}>
                                 <span>Total TTC:</span>
-                                <span style={{ color: 'var(--primary)' }}>{Number(detailModal.data.total_amount).toFixed(3)} DT</span>
+                                <span style={{ color: 'var(--primary)' }}>{Math.round(detailModal.data.total_amount)} TND</span>
                             </div>
                         </div>
                     </div>
