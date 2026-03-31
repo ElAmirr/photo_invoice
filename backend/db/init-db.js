@@ -39,6 +39,8 @@ function initDb(dbPath) {
             title TEXT,
             shooting_date TEXT NOT NULL,
             location TEXT,
+            start_time TEXT,
+            duration TEXT,
             total_price DECIMAL(10,2) DEFAULT 0.00,
             avance DECIMAL(10,2) DEFAULT 0.00,
             remaining DECIMAL(10,2) DEFAULT 0.00,
@@ -53,6 +55,9 @@ function initDb(dbPath) {
             reference TEXT UNIQUE,
             date TEXT NOT NULL,
             valid_until TEXT,
+            title TEXT,
+            subtotal_amount DECIMAL(10,2) DEFAULT 0.00,
+            tax_amount DECIMAL(10,2) DEFAULT 0.00,
             total_amount DECIMAL(10,2) DEFAULT 0.00,
             status TEXT CHECK(status IN ('pending','accepted','rejected')) DEFAULT 'pending',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -65,6 +70,8 @@ function initDb(dbPath) {
             devis_id INTEGER,
             reference TEXT UNIQUE,
             date TEXT NOT NULL,
+            subtotal_amount DECIMAL(10,2) DEFAULT 0.00,
+            tax_amount DECIMAL(10,2) DEFAULT 0.00,
             total_amount DECIMAL(10,2) DEFAULT 0.00,
             status TEXT CHECK(status IN ('unpaid','paid','partial')) DEFAULT 'unpaid',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -88,6 +95,7 @@ function initDb(dbPath) {
             parent_id INTEGER NOT NULL,
             description TEXT NOT NULL,
             quantity INTEGER DEFAULT 1,
+            days INTEGER,
             unit_price DECIMAL(10,2) NOT NULL,
             total_price DECIMAL(10,2) NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -117,12 +125,47 @@ function initDb(dbPath) {
         );
     `);
 
-    // Migration: add facture_id to payments if missing (existing DB schema upgrade)
+    // --- MIGRATIONS ---
+
+    // 1. Payments: add facture_id
     const paymentsInfo = db.prepare("PRAGMA table_info(payments)").all();
-    const hasFactureId = paymentsInfo.some(col => col.name === 'facture_id');
-    if (!hasFactureId) {
+    if (!paymentsInfo.some(col => col.name === 'facture_id')) {
         db.exec('ALTER TABLE payments ADD COLUMN facture_id INTEGER;');
         console.log('DB migration: added payments.facture_id');
+    }
+
+    // 2. Shootings: add start_time, duration
+    const shootingsInfo = db.prepare("PRAGMA table_info(shootings)").all();
+    if (!shootingsInfo.some(col => col.name === 'start_time')) {
+        db.exec('ALTER TABLE shootings ADD COLUMN start_time TEXT;');
+        db.exec('ALTER TABLE shootings ADD COLUMN duration TEXT;');
+        console.log('DB migration: added shootings columns');
+    }
+
+    // 3. Devis: add title, subtotal_amount, tax_amount
+    const devisInfo = db.prepare("PRAGMA table_info(devis)").all();
+    if (!devisInfo.some(col => col.name === 'title')) {
+        try { db.exec('ALTER TABLE devis ADD COLUMN title TEXT;'); } catch (e) { }
+    }
+    if (!devisInfo.some(col => col.name === 'subtotal_amount')) {
+        try { db.exec('ALTER TABLE devis ADD COLUMN subtotal_amount DECIMAL(10,2) DEFAULT 0.00;'); } catch (e) { }
+        try { db.exec('ALTER TABLE devis ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0.00;'); } catch (e) { }
+        console.log('DB migration: added devis financial columns');
+    }
+
+    // 4. Factures: add subtotal_amount, tax_amount
+    const facturesInfo = db.prepare("PRAGMA table_info(factures)").all();
+    if (!facturesInfo.some(col => col.name === 'subtotal_amount')) {
+        try { db.exec('ALTER TABLE factures ADD COLUMN subtotal_amount DECIMAL(10,2) DEFAULT 0.00;'); } catch (e) { }
+        try { db.exec('ALTER TABLE factures ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0.00;'); } catch (e) { }
+        console.log('DB migration: added factures financial columns');
+    }
+
+    // 5. Invoice Items: add days
+    const itemsInfo = db.prepare("PRAGMA table_info(invoice_items)").all();
+    if (!itemsInfo.some(col => col.name === 'days')) {
+        try { db.exec('ALTER TABLE invoice_items ADD COLUMN days INTEGER;'); } catch (e) { }
+        console.log('DB migration: added invoice_items.days');
     }
 
     console.log('Successfully initialized database schema.');
