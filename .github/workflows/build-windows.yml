@@ -20,7 +20,13 @@ jobs:
           cache: 'npm'
 
       - name: Install root dependencies
-        run: npm install
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Install frontend dependencies
+        run: npm install --prefix frontend --no-audit --no-fund
+
+      - name: Install backend dependencies
+        run: npm install --prefix backend --no-audit --no-fund
 
       - name: Build App
         run: npm run build
