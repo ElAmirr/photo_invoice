@@ -27,7 +27,10 @@
             "package.json"
         ],
         "win": {
-            "icon": "frontend/src/assets/logo.png"
+            "icon": "frontend/src/assets/logo.png",
+            "target": [
+                "nsis"
+            ]
         },
         "mac": {
             "icon": "frontend/src/assets/logo.png",
