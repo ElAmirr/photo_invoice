@@ -7,8 +7,7 @@
         "frontend:dev": "npm --prefix frontend run dev",
         "backend:dev": "npm --prefix backend run dev",
         "dev": "concurrently \"npm run backend:dev\" \"wait-on http://127.0.0.1:5055 && npm run frontend:dev\" \"wait-on http://localhost:5173 && electron .\"",
-        "build": "npm --prefix frontend run build && electron-builder",
-        "postinstall": "npm install --prefix frontend && npm install --prefix backend"
+        "build": "npm --prefix frontend run build && electron-builder"
     },
     "keywords": [],
     "author": "",
