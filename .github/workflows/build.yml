@@ -41,7 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shootix-macos
-          path: dist-electron/*.{dmg,zip}
+          path: dist-electron/**/*.{dmg,zip}
 
   build-windows:
     runs-on: windows-latest
@@ -77,4 +77,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shootix-windows
-          path: dist-electron/*.exe
+          path: dist-electron/**/*.exe
