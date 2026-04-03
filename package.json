@@ -32,7 +32,7 @@
             ]
         },
         "mac": {
-            "icon": "frontend/src/assets/logo.png",
+            "icon": "frontend/src/assets/logo_mac.png",
             "category": "public.app-category.business",
             "target": [
                 "dmg",
