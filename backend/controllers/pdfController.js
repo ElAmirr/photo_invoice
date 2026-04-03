@@ -65,7 +65,57 @@ function formatDate(d) {
 }
 
 function formatCurrency(n) {
-  return Math.round(n || 0) + ' TND';
+  return (Number(n) || 0).toFixed(3).replace('.', ',') + ' TND';
+}
+
+function numberToFrench(number) {
+  if (number === 0) return "Zéro dinar";
+  const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+  const tens = ["", "dix", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingt", "quatre-vingt-dix"];
+  const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+
+  function getBelowHundred(n) {
+    if (n < 10) return units[n];
+    if (n < 20) return teens[n - 10];
+    const t = Math.floor(n / 10);
+    const u = n % 10;
+    if (t === 7) return "soixante-" + (u === 1 ? "et-onze" : teens[u]);
+    if (t === 9) return "quatre-vingt-" + teens[u];
+    if (u === 1 && t < 7) return tens[t] + "-et-un";
+    if (u === 0) return tens[t === 8 ? 8 : t];
+    return tens[t] + "-" + units[u];
+  }
+
+  function getBelowThousand(n) {
+    if (n === 0) return "";
+    const h = Math.floor(n / 100);
+    const rest = n % 100;
+    let s = "";
+    if (h > 1) s += units[h] + " cent";
+    else if (h === 1) s += "cent";
+    if (rest > 0) s += (s ? " " : "") + getBelowHundred(rest);
+    return s;
+  }
+
+  function convert(n) {
+    if (n === 0) return "";
+    if (n < 1000) return getBelowThousand(n);
+    const k = Math.floor(n / 1000);
+    const rest = n % 1000;
+    let s = "";
+    if (k > 1) s += getBelowThousand(k) + " mille";
+    else s += "mille";
+    if (rest > 0) s += " " + getBelowThousand(rest);
+    return s;
+  }
+
+  const dinars = Math.floor(number);
+  const millimes = Math.round((number - dinars) * 1000);
+  let result = convert(dinars) + (dinars > 1 ? " dinars" : " dinar");
+  if (millimes > 0) {
+    result += " et " + convert(millimes) + (millimes > 1 ? " millimes" : " millime");
+  }
+  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 function buildHtml(type, data) {
@@ -122,10 +172,9 @@ function buildHtml(type, data) {
     tbody tr:nth-child(even) { background:#f8f9ff; }
     tbody td { padding:9px 12px; font-size:12px; }
     .totals { display:flex; justify-content:flex-end; margin-top:10px; }
-    .totals-box { background: linear-gradient(135deg, #6C63FF 0%, #4338ca 100%); color:white; border-radius:8px; padding:20px; min-width:240px; }
-    .totals-box .row { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
-    .totals-box .total-line { display:flex; justify-content:space-between; font-size:16px; font-weight:700;
-      color:white; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px; margin-top:6px; }
+    .totals-box { width:240px; margin-left:auto; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:15px; }
+    .totals-box .row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#4b5563; }
+    .totals-box .total-line { display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:2px solid #1a1a2e; font-size:16px; font-weight:800; color:#1a1a2e; }
     .footer { margin-top:50px; text-align:center; font-size:10px; color:#aaa; }
     ${isDevis ? `.valid-until { font-size:12px; color:#888; margin-top:4px; }` : ''}
   </style>
@@ -151,7 +200,8 @@ function buildHtml(type, data) {
         <p>${company.address || ''}</p>
         <p>${company.phone || ''} | ${company.email || ''}</p>
         ${company.matricule_fiscale ? `<p>MF: ${company.matricule_fiscale}</p>` : ''}
-        ${company.patente ? `<p>RIB: ${company.patente}</p>` : ''}
+        ${company.bank_name ? `<p>Banque: ${company.bank_name}</p>` : ''}
+        ${company.account_number ? `<p>RIB: ${company.account_number}</p>` : ''}
       </div>
     </div>
     <div style="flex:1;">
@@ -162,6 +212,7 @@ function buildHtml(type, data) {
         <p>${client.phone || ''} | ${client.email || ''}</p>
         ${client.matricule_fiscale ? `<p>MF: ${client.matricule_fiscale}</p>` : ''}
       </div>
+      ${doc.bon_commande ? `<div style="font-size:13px; color:#1a1a2e; margin-top:8px;"><strong>Bon de commande n°: ${doc.bon_commande}</strong></div>` : ''}
     </div>
   </div>
 
@@ -171,14 +222,22 @@ function buildHtml(type, data) {
       <tr>
         <th style="width:40px;">#</th>
         <th>Description</th>
-        <th style="width:80px;text-align:center;">Nbre Jours</th>
+        <th style="width:120px;text-align:center;">Prestation</th>
         <th style="width:60px;text-align:center;">Qté</th>
-        <th style="width:100px;text-align:right;">Prix Unit.</th>
+        <th style="width:100px;text-align:right;">Prix Unit</th>
         <th style="width:110px;text-align:right;">Total</th>
       </tr>
     </thead>
-    <tbody>${itemRows}</tbody>
+    <tbody>${itemRows}    </tbody>
   </table>
+  <div style="display:flex; justify-content:space-between;">
+    
+  
+  ${doc.tva_suspended ? `
+    <div style="margin-top:10px; font-size:12px; font-style:italic; padding:10px; border-radius:4px; color:#374151;">
+        Suspendu de TVA 19% selon attestation en suspension numéro <strong>${doc.suspension_number || 'N/A'}</strong>
+    </div>
+  ` : ''}
 
   <div class="totals">
     <div class="totals-box">
@@ -186,9 +245,20 @@ function buildHtml(type, data) {
         <span>Total HT</span>
         <span>${formatCurrency(doc.subtotal_amount || doc.total_amount)}</span>
       </div>
+      ${doc.tva_suspended ? `
+        <div class="row">
+          <span>TVA (Suspendue)</span>
+          <span>${formatCurrency(0)}</span>
+        </div>
+      ` : `
+        <div class="row">
+          <span>TVA (19%)</span>
+          <span>${formatCurrency(doc.tax_amount || 0)}</span>
+        </div>
+      `}
       <div class="row">
-        <span>TVA (19%)</span>
-        <span>${formatCurrency(doc.tax_amount || 0)}</span>
+        <span>Droit de Timbre</span>
+        <span>${formatCurrency(1.000)}</span>
       </div>
       <div class="total-line">
         <span>TOTAL TTC</span>
@@ -197,7 +267,14 @@ function buildHtml(type, data) {
     </div>
   </div>
 
-  <div class="footer">
+  
+  </div>
+
+  <div style="text-align:center; margin-top:20px; font-size:14px; color:#1a1a2e; font-weight:700; padding-top:10px;">
+    Arrêtée la présente ${type === 'devis' ? 'devis' : 'facture'} à la somme de :
+    <span style="text-transform: underline;">${numberToFrench(doc.total_amount)}</span>
+  </div>
+  <div class="footer" style="border-top:1px solid #eee; padding-top:10px;">
     <p>${company.name || ''} — ${company.address || ''} — ${company.phone || ''}</p>
   </div>
 </body>

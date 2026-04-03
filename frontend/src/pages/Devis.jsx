@@ -35,7 +35,10 @@ const Devis = () => {
         date: format(new Date(), 'yyyy-MM-dd'),
         valid_until: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         status: 'pending',
-        title: ''
+        title: '',
+        bon_commande: '',
+        tva_suspended: false,
+        suspension_number: ''
     });
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
 
@@ -67,7 +70,10 @@ const Devis = () => {
                 date: format(new Date(res.data.date), 'yyyy-MM-dd'),
                 valid_until: format(new Date(res.data.valid_until), 'yyyy-MM-dd'),
                 status: res.data.status,
-                title: res.data.title || ''
+                title: res.data.title || '',
+                bon_commande: res.data.bon_commande || '',
+                tva_suspended: !!res.data.tva_suspended,
+                suspension_number: res.data.suspension_number || ''
             });
             setItems(res.data.items);
         } else {
@@ -76,7 +82,10 @@ const Devis = () => {
                 date: format(new Date(), 'yyyy-MM-dd'),
                 valid_until: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
                 status: 'pending',
-                title: ''
+                title: '',
+                bon_commande: '',
+                tva_suspended: false,
+                suspension_number: ''
             });
             setItems([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
         }
@@ -205,7 +214,7 @@ const Devis = () => {
                                     <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yyyy') : '-'}</div>
                                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yyyy') : '-'}</div>
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: '700' }}>{Math.round(d.total_amount || 0)} TND</td>
+                                <td style={{ textAlign: 'right', fontWeight: '700' }}>{(d.total_amount || 0).toFixed(3).replace('.', ',')} TND</td>
                                 <td>
                                     <span className={`badge badge-${d.status}`}>
                                         {d.status === 'pending' ? 'En attente' : d.status === 'accepted' ? 'Accepté' : 'Rejeté'}
@@ -274,6 +283,39 @@ const Devis = () => {
                             </select>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n°</label>
+                            <input
+                                placeholder="ex: 12345"
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                value={form.bon_commande} onChange={e => setForm({ ...form, bon_commande: e.target.value })}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
+                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="radio" checked={!form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: false })} />
+                                    <span>TVA 19%</span>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="radio" checked={form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: true })} />
+                                    <span>Suspendu (0%)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {form.tva_suspended && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
+                                <input
+                                    placeholder="ex: 2026-AS-001"
+                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                    value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
+                                />
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre / Nom du Projet (Interne)</label>
                             <input
                                 placeholder="ex: Mariage Sarah & Amine"
@@ -299,7 +341,7 @@ const Devis = () => {
                         </div>
                     </div>
 
-                    <ItemsTable items={items} setItems={setItems} />
+                    <ItemsTable items={items} setItems={setItems} tvaSuspended={form.tva_suspended} />
 
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '30px', width: '100%', justifyContent: 'center', padding: '14px' }}>
                         {modal.data ? 'Mettre à jour le devis' : 'Créer le devis'}

@@ -13,7 +13,7 @@ async function generateFactureRef() {
     let reference;
     let attempt = 0;
     const maxAttempts = 10;
-    
+
     while (attempt < maxAttempts) {
         // Count factures for the current year using SQLite-compatible syntax
         const [rows] = await pool.query(
@@ -22,20 +22,20 @@ async function generateFactureRef() {
         );
         const count = rows[0].cnt + 1 + attempt;
         reference = `FAC-${year}-${String(count).padStart(3, '0')}`;
-        
+
         // Check if this reference already exists
         const [existing] = await pool.query(
             "SELECT id FROM factures WHERE reference = ?",
             [reference]
         );
-        
+
         if (!existing || existing.length === 0) {
             return reference;
         }
-        
+
         attempt++;
     }
-    
+
     // Fallback: use timestamp-based unique reference
     return `FAC-${year}-${Date.now()}`;
 }
@@ -80,21 +80,22 @@ exports.create = async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const { client_id, date, status, shooting_id, items } = req.body;
+        const { client_id, date, status, shooting_id, items, tva_suspended, suspension_number } = req.body;
+        const isSuspended = !!tva_suspended;
 
         let reference;
         let factureInsertResult;
         const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
-        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
-        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
+        const tax_amount = isSuspended ? 0 : Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount + 1.000).toFixed(3));
 
         for (let attempt = 0; attempt < 5; attempt++) {
             reference = await generateFactureRef();
             try {
                 const [result] = await conn.query(
-                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id)
-       VALUES (?,?,?,?,?,?,?,?)`,
-                    [client_id, reference, date, status || 'unpaid', subtotal_amount, tax_amount, total_amount, shooting_id || null]
+                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, shooting_id, bon_commande, tva_suspended, suspension_number)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                    [client_id, reference, date, status || 'unpaid', subtotal_amount, tax_amount, total_amount, shooting_id || null, req.body.bon_commande || null, isSuspended ? 1 : 0, suspension_number || null]
                 );
                 factureInsertResult = result;
                 break;
@@ -138,14 +139,15 @@ exports.update = async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const { client_id, date, status, shooting_id, items } = req.body;
+        const { client_id, date, status, shooting_id, items, tva_suspended, suspension_number } = req.body;
+        const isSuspended = !!tva_suspended;
         const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
-        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
-        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
+        const tax_amount = isSuspended ? 0 : Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount + 1.000).toFixed(3));
 
         await conn.query(
-            'UPDATE factures SET client_id=?, date=?, status=?, shooting_id=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
-            [client_id, date, status, shooting_id || null, subtotal_amount, tax_amount, total_amount, req.params.id]
+            'UPDATE factures SET client_id=?, date=?, status=?, shooting_id=?, subtotal_amount=?, tax_amount=?, total_amount=?, bon_commande=?, tva_suspended=?, suspension_number=? WHERE id=?',
+            [client_id, date, status, shooting_id || null, subtotal_amount, tax_amount, total_amount, req.body.bon_commande || null, isSuspended ? 1 : 0, suspension_number || null, req.params.id]
         );
 
         await conn.query("DELETE FROM invoice_items WHERE type='facture' AND parent_id=?", [req.params.id]);

@@ -6,7 +6,7 @@ async function generateDevisRef() {
     let reference;
     let attempt = 0;
     const maxAttempts = 10;
-    
+
     while (attempt < maxAttempts) {
         // Count devis for the current year using SQLite-compatible syntax
         const [rows] = await pool.query(
@@ -15,20 +15,20 @@ async function generateDevisRef() {
         );
         const count = rows[0].cnt + 1 + attempt;
         reference = `DEV-${year}-${String(count).padStart(3, '0')}`;
-        
+
         // Check if this reference already exists
         const [existing] = await pool.query(
             "SELECT id FROM devis WHERE reference = ?",
             [reference]
         );
-        
+
         if (!existing || existing.length === 0) {
             return reference;
         }
-        
+
         attempt++;
     }
-    
+
     // Fallback: use timestamp-based unique reference
     return `DEV-${year}-${Date.now()}`;
 }
@@ -70,7 +70,8 @@ exports.create = async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const { client_id, date, valid_until, status, items } = req.body;
+        const { client_id, date, valid_until, status, items, tva_suspended, suspension_number } = req.body;
+        const isSuspended = !!tva_suspended;
 
         // Get company snapshot
         const [co] = await conn.query('SELECT * FROM company_info LIMIT 1');
@@ -78,13 +79,13 @@ exports.create = async (req, res) => {
 
         const reference = await generateDevisRef();
         const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
-        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
-        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
+        const tax_amount = isSuspended ? 0 : Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount + 1.000).toFixed(3));
 
         const [result] = await conn.query(
-            `INSERT INTO devis (client_id, reference, date, valid_until, status, title, subtotal_amount, tax_amount, total_amount)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-            [client_id, reference, date, valid_until, status || 'pending', req.body.title || null, subtotal_amount, tax_amount, total_amount]
+            `INSERT INTO devis (client_id, reference, date, valid_until, status, title, subtotal_amount, tax_amount, total_amount, bon_commande, tva_suspended, suspension_number)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [client_id, reference, date, valid_until, status || 'pending', req.body.title || null, subtotal_amount, tax_amount, total_amount, req.body.bon_commande || null, isSuspended ? 1 : 0, suspension_number || null]
         );
         const devisId = result.insertId;
 
@@ -111,15 +112,16 @@ exports.update = async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const { client_id, date, valid_until, status, items } = req.body;
+        const { client_id, date, valid_until, status, items, tva_suspended, suspension_number } = req.body;
+        const isSuspended = !!tva_suspended;
         const subtotal_amount = (items || []).reduce((sum, i) => sum + Number(i.total_price || 0), 0);
-        const tax_amount = Number((subtotal_amount * 0.19).toFixed(3));
-        const total_amount = Number((subtotal_amount + tax_amount).toFixed(3));
+        const tax_amount = isSuspended ? 0 : Number((subtotal_amount * 0.19).toFixed(3));
+        const total_amount = Number((subtotal_amount + tax_amount + 1.000).toFixed(3));
 
         console.log('UPDATE DEVIS:', req.params.id);
         await conn.query(
-            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, title=?, subtotal_amount=?, tax_amount=?, total_amount=? WHERE id=?',
-            [client_id, date, valid_until, status, req.body.title || null, subtotal_amount, tax_amount, total_amount, req.params.id]
+            'UPDATE devis SET client_id=?, date=?, valid_until=?, status=?, title=?, subtotal_amount=?, tax_amount=?, total_amount=?, bon_commande=?, tva_suspended=?, suspension_number=? WHERE id=?',
+            [client_id, date, valid_until, status, req.body.title || null, subtotal_amount, tax_amount, total_amount, req.body.bon_commande || null, isSuspended ? 1 : 0, suspension_number || null, req.params.id]
         );
 
         await conn.query("DELETE FROM invoice_items WHERE type='devis' AND parent_id=?", [req.params.id]);
@@ -222,8 +224,8 @@ exports.convertToFacture = async (req, res) => {
             try {
                 const today = new Date().toISOString().split('T')[0];
                 const ins = await conn.query(
-                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id)
-                        VALUES (?,?,?, 'unpaid',?,?,?,?,?)`,
+                    `INSERT INTO factures (client_id, reference, date, status, subtotal_amount, tax_amount, total_amount, devis_id, shooting_id, bon_commande, tva_suspended, suspension_number)
+                        VALUES (?,?,?, 'unpaid',?,?,?,?,?,?,?,?)`,
                     [
                         devis.client_id,
                         facRef,
@@ -232,7 +234,10 @@ exports.convertToFacture = async (req, res) => {
                         Number(devis.tax_amount || 0),
                         Number(devis.total_amount || 0),
                         devis.id,
-                        shootingId
+                        shootingId,
+                        devis.bon_commande || null,
+                        devis.tva_suspended || 0,
+                        devis.suspension_number || null
                     ]
                 );
                 facResult = ins[0];

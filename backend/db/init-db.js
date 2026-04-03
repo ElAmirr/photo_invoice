@@ -168,6 +168,44 @@ function initDb(dbPath) {
         console.log('DB migration: added invoice_items.days');
     }
 
+    // 6. Company Info: add bank_name, account_number
+    const companyInfo = db.prepare("PRAGMA table_info(company_info)").all();
+    if (!companyInfo.some(col => col.name === 'bank_name')) {
+        try { db.exec('ALTER TABLE company_info ADD COLUMN bank_name TEXT;'); } catch (e) { }
+    }
+    if (!companyInfo.some(col => col.name === 'account_number')) {
+        try { db.exec('ALTER TABLE company_info ADD COLUMN account_number TEXT;'); } catch (e) { }
+        console.log('DB migration: added bank information columns to company_info');
+    }
+
+    // 7. Devis & Factures: add bon_commande
+    const devisInfoBC = db.prepare("PRAGMA table_info(devis)").all();
+    if (!devisInfoBC.some(col => col.name === 'bon_commande')) {
+        try { db.exec('ALTER TABLE devis ADD COLUMN bon_commande TEXT;'); } catch (e) { }
+    }
+    const facturesInfoBC = db.prepare("PRAGMA table_info(factures)").all();
+    if (!facturesInfoBC.some(col => col.name === 'bon_commande')) {
+        try { db.exec('ALTER TABLE factures ADD COLUMN bon_commande TEXT;'); } catch (e) { }
+        console.log('DB migration: added bon_commande columns to devis and factures');
+    }
+
+    // 8. Devis & Factures: add tva_suspended, suspension_number
+    const devisTva = db.prepare("PRAGMA table_info(devis)").all();
+    if (!devisTva.some(col => col.name === 'tva_suspended')) {
+        try { db.exec('ALTER TABLE devis ADD COLUMN tva_suspended INTEGER DEFAULT 0;'); } catch (e) { }
+    }
+    if (!devisTva.some(col => col.name === 'suspension_number')) {
+        try { db.exec('ALTER TABLE devis ADD COLUMN suspension_number TEXT;'); } catch (e) { }
+    }
+    const facturesTva = db.prepare("PRAGMA table_info(factures)").all();
+    if (!facturesTva.some(col => col.name === 'tva_suspended')) {
+        try { db.exec('ALTER TABLE factures ADD COLUMN tva_suspended INTEGER DEFAULT 0;'); } catch (e) { }
+    }
+    if (!facturesTva.some(col => col.name === 'suspension_number')) {
+        try { db.exec('ALTER TABLE factures ADD COLUMN suspension_number TEXT;'); } catch (e) { }
+        console.log('DB migration: added tva_suspended columns to devis and factures');
+    }
+
     console.log('Successfully initialized database schema.');
     return db;
 }

@@ -126,10 +126,20 @@ const CompanySettings = () => {
                         name="matricule_fiscale" value={form.matricule_fiscale} onChange={handleChange} />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600' }}>RIB (compte bancaire)</label>
-                    <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                        name="patente" value={form.patente} onChange={handleChange} />
+                <div style={{ gridColumn: 'span 2', marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px', color: 'var(--primary)' }}>Informations Bancaires</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Nom de la banque</label>
+                            <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                name="bank_name" value={form.bank_name || ''} onChange={handleChange} placeholder="ex: Amen Bank" />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Numéro de compte (RIB)</label>
+                            <input className="input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                name="account_number" value={form.account_number || ''} onChange={handleChange} placeholder="00 000 0000000000000 00" />
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>

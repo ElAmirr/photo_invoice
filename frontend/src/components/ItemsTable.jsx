@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
-const ItemsTable = ({ items, setItems }) => {
+const ItemsTable = ({ items, setItems, tvaSuspended }) => {
     const addItem = () => {
         setItems([...items, { description: '', days: '', quantity: 1, unit_price: 0, total_price: 0 }]);
     };
@@ -26,9 +26,12 @@ const ItemsTable = ({ items, setItems }) => {
         setItems(newItems);
     };
 
-    const subtotal = Number(items.reduce((sum, item) => sum + Number(item.total_price || 0), 0).toFixed(3));
-    const tax = Number((subtotal * 0.19).toFixed(3));
-    const total = Number((subtotal + tax).toFixed(3));
+    const subtotal = items.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+    const tax = tvaSuspended ? 0 : Number((subtotal * 0.19).toFixed(3));
+    const stampDuty = 1.000;
+    const total = Number((subtotal + tax + stampDuty).toFixed(3));
+
+    const formatNum = (val) => (Number(val) || 0).toFixed(3).replace('.', ',');
 
     return (
         <div style={{ marginTop: '20px' }}>
@@ -43,8 +46,8 @@ const ItemsTable = ({ items, setItems }) => {
                 <table style={{ minWidth: '600px' }}>
                     <thead>
                         <tr>
-                            <th style={{ width: '35%' }}>Description</th>
-                            <th style={{ width: '15%', textAlign: 'center' }}>Nbre Jours</th>
+                            <th style={{ width: '30%' }}>Description</th>
+                            <th style={{ width: '20%', textAlign: 'center' }}>Prestation</th>
                             <th style={{ width: '10%', textAlign: 'center' }}>Qté</th>
                             <th style={{ width: '15%', textAlign: 'right' }}>Prix Unit. (TND)</th>
                             <th style={{ width: '20%', textAlign: 'right' }}>Total (TND)</th>
@@ -66,7 +69,7 @@ const ItemsTable = ({ items, setItems }) => {
                                     <input
                                         style={{ width: '100%', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', textAlign: 'center' }}
                                         value={item.days || ''}
-                                        placeholder="ex: 1 jour"
+                                        placeholder="Tournage par jour"
                                         onChange={e => handleChange(index, 'days', e.target.value)}
                                     />
                                 </td>
@@ -88,7 +91,7 @@ const ItemsTable = ({ items, setItems }) => {
                                     />
                                 </td>
                                 <td style={{ textAlign: 'right', fontWeight: '600' }}>
-                                    {Math.round(item.total_price || 0)}
+                                    {formatNum(item.total_price)}
                                 </td>
                                 <td style={{ textAlign: 'center' }}>
                                     <button
@@ -106,18 +109,22 @@ const ItemsTable = ({ items, setItems }) => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <div className="card" style={{ minWidth: '240px', background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)', color: 'white', padding: '20px' }}>
+                <div className="card" style={{ minWidth: '260px', background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)', color: 'white', padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                         <span>Total HT</span>
-                        <span>{Math.round(subtotal || 0)} TND</span>
+                        <span>{formatNum(subtotal)} TND</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                        <span>TVA (19%)</span>
+                        <span>{formatNum(tax)} TND</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-                        <span>TVA (19%)</span>
-                        <span>{Math.round(tax || 0)} TND</span>
+                        <span>Droit de Timbre</span>
+                        <span>{formatNum(stampDuty)} TND</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', color: 'var(--primary-light)' }}>
                         <span>TOTAL TTC </span>
-                        <span>{Math.round(total || 0)} TND</span>
+                        <span>{formatNum(total)} TND</span>
                     </div>
                 </div>
             </div>

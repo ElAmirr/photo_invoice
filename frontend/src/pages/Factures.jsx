@@ -29,7 +29,10 @@ const Factures = () => {
         client_id: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         status: 'unpaid',
-        shooting_id: ''
+        shooting_id: '',
+        bon_commande: '',
+        tva_suspended: false,
+        suspension_number: ''
     });
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
     const [paymentForm, setPaymentForm] = useState({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
@@ -73,7 +76,10 @@ const Factures = () => {
                 client_id: res.data.client_id,
                 date: format(new Date(res.data.date), 'yyyy-MM-dd'),
                 status: res.data.status,
-                shooting_id: res.data.shooting_id || ''
+                shooting_id: res.data.shooting_id || '',
+                bon_commande: res.data.bon_commande || '',
+                tva_suspended: !!res.data.tva_suspended,
+                suspension_number: res.data.suspension_number || ''
             });
             setItems(res.data.items);
         } else {
@@ -81,7 +87,10 @@ const Factures = () => {
                 client_id: '',
                 date: format(new Date(), 'yyyy-MM-dd'),
                 status: 'unpaid',
-                shooting_id: ''
+                shooting_id: '',
+                bon_commande: '',
+                tva_suspended: false,
+                suspension_number: ''
             });
             setItems([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
         }
@@ -241,11 +250,11 @@ const Factures = () => {
                                 <td>{f.client_name}</td>
                                 <td>{f.date ? format(new Date(f.date), 'dd/MM/yyyy') : '-'}</td>
                                 <td style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: '700' }}>{Math.round(f.total_amount || 0)} TND</div>
-                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {Math.round(f.total_paid || 0)} TND</div>
+                                    <div style={{ fontWeight: '700' }}>{(f.total_amount || 0).toFixed(3).replace('.', ',')} TND</div>
+                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {(f.total_paid || 0).toFixed(3).replace('.', ',')} TND</div>
                                     {Number(f.total_amount || 0) - Number(f.total_paid || 0) > 0 && (
                                         <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
-                                            Reste: {Math.round(Number(f.total_amount || 0) - Number(f.total_paid || 0))} TND
+                                            Reste: {(Number(f.total_amount || 0) - Number(f.total_paid || 0)).toFixed(3).replace('.', ',')} TND
                                         </div>
                                     )}
                                 </td>
@@ -291,6 +300,40 @@ const Factures = () => {
                             {form.shooting_id && <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600' }}>Client verrouillé par le shooting choisi</span>}
                         </div>
 
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n°</label>
+                            <input
+                                placeholder="ex: 12345"
+                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                value={form.bon_commande} onChange={e => setForm({ ...form, bon_commande: e.target.value })}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
+                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="radio" checked={!form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: false })} />
+                                    <span>TVA 19%</span>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="radio" checked={form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: true })} />
+                                    <span>Suspendu (0%)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {form.tva_suspended && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
+                                <input
+                                    placeholder="ex: 2026-AS-001"
+                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                    value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
+                                />
+                            </div>
+                        )}
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date de facture</label>
                             <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
@@ -311,7 +354,7 @@ const Factures = () => {
                         </div>
                     </div>
 
-                    <ItemsTable items={items} setItems={setItems} />
+                    <ItemsTable items={items} setItems={setItems} tvaSuspended={form.tva_suspended} />
 
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '30px', width: '100%', justifyContent: 'center', padding: '14px' }}>
                         {modal.data ? 'Mettre à jour la facture' : 'Créer la facture'}
