@@ -24,18 +24,7 @@ async function generatePdf(html) {
   if (process.parentPort) {
     return await generatePdfViaMain(html);
   } else {
-    // Standalone mode - use Puppeteer if available
-    try {
-      const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      const pdf = await page.pdf({ format: 'A4', printBackground: true });
-      await browser.close();
-      return pdf;
-    } catch (err) {
-      throw new Error('PDF generation failed: Standalone mode requires puppeteer installed in backend. ' + err.message);
-    }
+    throw new Error('PDF generation requires running as an Electron utility process.');
   }
 }
 
