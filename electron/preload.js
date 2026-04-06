@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electron', {
-    // Add any necessary IPC communication here
-    // For example:
-    // sendMessage: (channel, data) => ipcRenderer.send(channel, data),
-    // onMessage: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args))
+    getHwid: () => ipcRenderer.invoke('get-hwid'),
+    checkLicense: () => ipcRenderer.invoke('check-license'),
+    saveLicense: (data) => ipcRenderer.invoke('save-license', data),
+    startTrial: () => ipcRenderer.invoke('start-trial')
 });

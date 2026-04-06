@@ -1,6 +1,8 @@
-const { app, BrowserWindow, dialog, utilityProcess } = require('electron');
+const { app, BrowserWindow, dialog, utilityProcess, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
+const { machineIdSync } = require('node-machine-id');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
@@ -149,4 +151,48 @@ app.on('will-quit', () => {
     if (backendProcess) {
         backendProcess.kill();
     }
+});
+// License Handlers
+const getLicensePath = () => path.join(app.getPath('userData'), 'license.json');
+
+ipcMain.handle('get-hwid', () => {
+    try {
+        return machineIdSync();
+    } catch (err) {
+        console.error('HWID Error:', err);
+        return 'unknown-hwid';
+    }
+});
+
+ipcMain.handle('check-license', () => {
+    const p = getLicensePath();
+    if (!fs.existsSync(p)) return { activated: false };
+    try {
+        const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+        // In a real app, we'd verify the signature here
+        return data;
+    } catch (err) {
+        return { activated: false };
+    }
+});
+
+ipcMain.handle('save-license', (event, licenseData) => {
+    try {
+        fs.writeFileSync(getLicensePath(), JSON.stringify(licenseData, null, 2));
+        return true;
+    } catch (err) {
+        return false;
+    }
+});
+
+ipcMain.handle('start-trial', () => {
+    const p = getLicensePath();
+    if (fs.existsSync(p)) return; // Don't overwrite existing license
+    const trialData = {
+        activated: false,
+        trialStartedAt: new Date().toISOString(),
+        trialDays: 5
+    };
+    fs.writeFileSync(p, JSON.stringify(trialData, null, 2));
+    return trialData;
 });

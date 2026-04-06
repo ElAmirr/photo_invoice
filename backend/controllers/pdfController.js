@@ -27,7 +27,11 @@ async function generatePdf(html) {
     // Standalone mode - use Puppeteer if available
     try {
       const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        executablePath: '/usr/bin/google-chrome-stable' || '/usr/bin/google-chrome' || '/usr/bin/chromium-browser',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdf = await page.pdf({ format: 'A4', printBackground: true });
@@ -230,16 +234,13 @@ function buildHtml(type, data) {
     </thead>
     <tbody>${itemRows}    </tbody>
   </table>
-  <div style="display:flex; justify-content:space-between;">
-    
-  
-  ${doc.tva_suspended ? `
-    <div style="margin-top:10px; font-size:12px; font-style:italic; padding:10px; border-radius:4px; color:#374151;">
-        Suspendu de TVA 19% selon attestation en suspension numéro <strong>${doc.suspension_number || 'N/A'}</strong>
-    </div>
-  ` : ''}
+  <div style="display:flex; justify-content:flex-end; align-items:flex-start; margin-top:10px;">
+    ${doc.tva_suspended ? `
+      <div style="flex:1; margin-right:40px; margin-top:10px; font-size:12px; font-style:italic; padding:10px; border-radius:4px; color:#374151;">
+          Suspendu de TVA 19% selon attestation en suspension numéro <strong>${doc.suspension_number || 'N/A'}</strong>
+      </div>
+    ` : ''}
 
-  <div class="totals">
     <div class="totals-box">
       <div class="row">
         <span>Total HT</span>
@@ -265,9 +266,6 @@ function buildHtml(type, data) {
         <span>${formatCurrency(doc.total_amount)}</span>
       </div>
     </div>
-  </div>
-
-  
   </div>
 
   <div style="text-align:center; margin-top:20px; font-size:14px; color:#1a1a2e; font-weight:700; padding-top:10px;">
