@@ -37,11 +37,11 @@ const LicenseModal = ({ onAuthenticated }) => {
         setError('');
 
         try {
-            // Note: The URL will be replaced with the real Render URL later
-            const response = await axios.post('https://shootix-license-server.onrender.com/api/activate', {
-                key: key,
-                hwid: hwid
-            });
+            const response = await axios.post(
+                'https://photo-invoice-licence-sever.onrender.com/api/activate',
+                { key: key.trim(), hwid: hwid },
+                { timeout: 40000 } // 40s timeout for Render cold starts
+            );
 
             if (response.data.success) {
                 await window.electron.saveLicense({
@@ -55,7 +55,11 @@ const LicenseModal = ({ onAuthenticated }) => {
                 setError(response.data.message || 'Clé de licence invalide');
             }
         } catch (err) {
-            setError('Erreur de connexion au serveur de licence');
+            if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+                setError('Le serveur se réveille, veuillez réessayer dans 30 secondes...');
+            } else {
+                setError('Erreur de connexion au serveur de licence');
+            }
         } finally {
             setLoading(false);
         }
@@ -63,9 +67,10 @@ const LicenseModal = ({ onAuthenticated }) => {
 
     const handleStartTrial = async () => {
         setLoading(true);
-        const res = await window.electron.startTrial();
+        await window.electron.startTrial();
         setTrialStatus({ remaining: 5, isExpired: false });
         setLoading(false);
+        onAuthenticated(); // Close modal and unlock app
     };
 
     return (
