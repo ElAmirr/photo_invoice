@@ -3,10 +3,50 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const { machineIdSync } = require('node-machine-id');
+const crypto = require('crypto');
+
+// Encryption Config
+const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
+const ENCRYPTION_KEY_SALT = 'shootix_secure_salt_2026';
+
+function getEncryptionKey() {
+    const hwid = machineIdSync();
+    return crypto.createHash('sha256').update(hwid + ENCRYPTION_KEY_SALT).digest();
+}
+
+function encrypt(text) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, getEncryptionKey(), iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text) {
+    try {
+        const textParts = text.split(':');
+        const iv = Buffer.from(textParts.shift(), 'hex');
+        const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+        const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, getEncryptionKey(), iv);
+        let decrypted = decipher.update(encryptedText);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString();
+    } catch (e) {
+        return null;
+    }
+}
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
 let backendProcess;
+
+function getLicensePath() {
+    const userDataPath = app.getPath('userData');
+    if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+    }
+    return path.join(userDataPath, 'license.lic'); // Using .lic for encrypted data
+}
 
 function startBackend() {
     const backendPath = path.join(__dirname, '..', 'backend', 'index.js');
@@ -153,7 +193,6 @@ app.on('will-quit', () => {
     }
 });
 // License Handlers
-const getLicensePath = () => path.join(app.getPath('userData'), 'license.json');
 
 ipcMain.handle('get-hwid', () => {
     try {
@@ -166,19 +205,44 @@ ipcMain.handle('get-hwid', () => {
 
 ipcMain.handle('check-license', () => {
     const p = getLicensePath();
-    if (!fs.existsSync(p)) return { activated: false };
-    try {
-        const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        // In a real app, we'd verify the signature here
-        return data;
-    } catch (err) {
-        return { activated: false };
+    if (fs.existsSync(p)) {
+        try {
+            const encryptedData = fs.readFileSync(p, 'utf8');
+            const decryptedData = decrypt(encryptedData);
+            if (!decryptedData) return { activated: false };
+
+            const data = JSON.parse(decryptedData);
+            const currentHwid = machineIdSync();
+
+            // Verify HWID matches (prevents copying license file to other machines)
+            if (data.hwid !== currentHwid) {
+                console.warn('License HWID mismatch!');
+                return { activated: false };
+            }
+
+            return data;
+        } catch (err) {
+            console.error('Error reading license:', err);
+            return { activated: false };
+        }
     }
+    return { activated: false };
 });
 
 ipcMain.handle('save-license', (event, licenseData) => {
     try {
-        fs.writeFileSync(getLicensePath(), JSON.stringify(licenseData, null, 2));
+        const encrypted = encrypt(JSON.stringify(licenseData));
+        fs.writeFileSync(getLicensePath(), encrypted);
+        return true;
+    } catch (err) {
+        return false;
+    }
+});
+
+ipcMain.handle('delete-license', () => {
+    try {
+        const p = getLicensePath();
+        if (fs.existsSync(p)) fs.unlinkSync(p);
         return true;
     } catch (err) {
         return false;
@@ -187,12 +251,20 @@ ipcMain.handle('save-license', (event, licenseData) => {
 
 ipcMain.handle('start-trial', () => {
     const p = getLicensePath();
-    if (fs.existsSync(p)) return; // Don't overwrite existing license
+    if (fs.existsSync(p)) return;
+
     const trialData = {
         activated: false,
         trialStartedAt: new Date().toISOString(),
-        trialDays: 5
+        trialDays: 5,
+        hwid: machineIdSync()
     };
-    fs.writeFileSync(p, JSON.stringify(trialData, null, 2));
-    return trialData;
+
+    try {
+        const encrypted = encrypt(JSON.stringify(trialData));
+        fs.writeFileSync(p, encrypted);
+        return true;
+    } catch (err) {
+        return false;
+    }
 });

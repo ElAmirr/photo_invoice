@@ -81,110 +81,153 @@ const LicenseModal = ({ onAuthenticated }) => {
             zIndex: 9999, backdropFilter: 'blur(10px)'
         }}>
             <div style={{
-                backgroundColor: '#1a1a2e', width: '450px', borderRadius: '24px',
-                padding: '40px', border: '1px solid rgba(108, 99, 255, 0.3)',
+                backgroundColor: '#1a1a2e',
+                borderRadius: '24px',
+                width: '100%',
+                maxWidth: '440px',
+                padding: '40px',
+                position: 'relative',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                color: 'white', textAlign: 'center'
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                overflow: 'hidden'
             }}>
+                {/* Background Decorative Gradient */}
                 <div style={{
-                    width: '64px', height: '64px', borderRadius: '16px',
-                    backgroundColor: 'rgba(108, 99, 255, 0.1)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 24px', border: '1px solid rgba(108, 99, 255, 0.2)'
-                }}>
-                    <Lock size={32} color="#6C63FF" />
-                </div>
+                    position: 'absolute',
+                    top: '-100px',
+                    right: '-100px',
+                    width: '300px',
+                    height: '300px',
+                    background: 'radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%)',
+                    zIndex: 0
+                }} />
 
-                <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>Activation de Shootix</h2>
-                <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '32px' }}>
-                    Veuillez entrer votre clé de licence pour continuer ou démarrer votre essai gratuit.
-                </p>
-
-                {error && (
-                    <div style={{
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                        color: '#f87171', padding: '12px', borderRadius: '12px',
-                        fontSize: '13px', marginBottom: '20px'
-                    }}>
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleActivate}>
-                    <div style={{ position: 'relative', marginBottom: '20px' }}>
-                        <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
-                            <Key size={18} />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 16px',
+                            boxShadow: '0 10px 20px rgba(147, 51, 234, 0.3)'
+                        }}>
+                            <Shield color="white" size={32} />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '8px' }}>Activation Shootix</h2>
+                        <p style={{ color: '#94a3b8', fontSize: '14px' }}>Entrez votre clé pour débloquer votre studio</p>
+                    </div>
+
+                    {error && (
+                        <div style={{
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            color: '#f87171',
+                            padding: '12px',
+                            borderRadius: '12px',
+                            fontSize: '13px',
+                            marginBottom: '20px',
+                            textAlign: 'center'
+                        }}>
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleActivate}>
+                        <div style={{ marginBottom: '24px', position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: '14px', top: '14px', color: '#64748b' }}>
+                                <Key size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                style={{
+                                    width: '100%', backgroundColor: '#0f172a', border: '1px solid #334155',
+                                    borderRadius: '12px', padding: '14px 14px 14px 44px', color: 'white',
+                                    fontSize: '14px', outline: 'none', transition: 'all 0.2s',
+                                    fontFamily: 'monospace'
+                                }}
+                                value={key}
+                                onChange={(e) => setKey(e.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
                             style={{
-                                width: '100%', backgroundColor: '#0f172a', border: '1px solid #334155',
-                                borderRadius: '12px', padding: '14px 14px 14px 44px', color: 'white',
-                                fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
-                                fontFamily: 'monospace'
+                                width: '100%',
+                                background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #C026D3 100%)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                fontSize: '15px',
+                                fontWeight: '700',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px'
                             }}
-                            value={key}
-                            onChange={(e) => setKey(e.target.value)}
-                        />
-                    </div>
+                            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)' }}
+                        >
+                            {loading ? 'Vérification...' : 'Activer maintenant'}
+                        </button>
+                    </form>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            width: '100%', backgroundColor: '#6C63FF', color: 'white',
-                            border: 'none', borderRadius: '12px', padding: '14px',
-                            fontSize: '15px', fontWeight: '700', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            transition: 'transform 0.1s, opacity 0.2s',
-                            opacity: loading ? 0.7 : 1
-                        }}
-                    >
-                        {loading ? 'Vérification...' : (
-                            <>
-                                <ShieldCheck size={18} />
-                                Activer maintenant
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                <div style={{ margin: '24px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
-                    <span style={{ color: '#64748b', fontSize: '12px' }}>OU</span>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
-                </div>
-
-                {!trialStatus ? (
-                    <button
-                        onClick={handleStartTrial}
-                        disabled={loading}
-                        style={{
-                            width: '100%', backgroundColor: 'transparent', color: '#94a3b8',
-                            border: '1px solid #334155', borderRadius: '12px', padding: '12px',
-                            fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        Démarrer l'essai gratuit (5 jours)
-                    </button>
-                ) : (
                     <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        color: trialStatus.isExpired ? '#f87171' : '#10b981', fontSize: '13px', fontWeight: '600'
+                        marginTop: '24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
                     }}>
-                        <Clock size={16} />
-                        {trialStatus.isExpired
-                            ? "Votre essai gratuit a expiré."
-                            : `Période d'essai : ${trialStatus.remaining} jours restants`
-                        }
-                    </div>
-                )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
+                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' }}>OU</span>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
+                        </div>
 
-                <div style={{ marginTop: '32px', fontSize: '11px', color: '#475569' }}>
-                    ID Machine: {hwid || 'Chargement...'}
+                        <button
+                            onClick={handleStartTrial}
+                            disabled={loading || (trialStatus && trialStatus.isExpired)}
+                            style={{
+                                width: '100%',
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                color: (trialStatus && trialStatus.isExpired) ? '#64748b' : 'white',
+                                border: '1px solid #334155',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                cursor: (loading || (trialStatus && trialStatus.isExpired)) ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}
+                            onMouseEnter={(e) => { if (!loading && (!trialStatus || !trialStatus.isExpired)) e.currentTarget.style.borderColor = '#9333EA' }}
+                            onMouseLeave={(e) => { if (!loading && (!trialStatus || !trialStatus.isExpired)) e.currentTarget.style.borderColor = '#334155' }}
+                        >
+                            {trialStatus ? (
+                                trialStatus.isExpired ? 'Essai expiré' : `Continuer l'essai (${trialStatus.remaining} jours restants)`
+                            ) : "Démarrer l'essai gratuit (5 jours)"}
+                        </button>
+                    </div>
+
+                    <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                        <p style={{ color: '#64748b', fontSize: '11px', marginBottom: '4px' }}>Identifiant Machine (HWID):</p>
+                        <code style={{ color: '#9333EA', fontSize: '10px', backgroundColor: 'rgba(147, 51, 234, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                            {hwid || 'Génération...'}
+                        </code>
+                    </div>
                 </div>
             </div>
         </div>

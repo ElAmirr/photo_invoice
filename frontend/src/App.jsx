@@ -9,6 +9,7 @@ import Factures from './pages/Factures';
 import Freelancers from './pages/Freelancers';
 import CompanySettings from './pages/CompanySettings';
 import LicenseModal from './components/LicenseModal';
+import axios from 'axios';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,9 +23,32 @@ function App() {
                 setLoading(false);
                 return;
             }
+
             const status = await window.electron.checkLicense();
+
             if (status.activated) {
                 setIsAuthenticated(true);
+                setLoading(false); // Show app early, validate in background
+
+                // Background Re-validation (Heartbeat)
+                try {
+                    const hwid = await window.electron.getHwid();
+                    const response = await axios.post(
+                        'https://photo-invoice-licence-sever.onrender.com/api/activate',
+                        { key: status.key, hwid: hwid },
+                        { timeout: 10000 } // 10s timeout
+                    );
+
+                    if (!response.data.success) {
+                        // Key is revoked or bound to another machine
+                        console.error('License revoked by server:', response.data.message);
+                        await window.electron.deleteLicense();
+                        setIsAuthenticated(false);
+                    }
+                } catch (err) {
+                    // Ignore network errors/timeouts (allow offline usage if already activated)
+                    console.log('Background verification skipped (Offline/Timeout)');
+                }
             } else if (status.trialStartedAt) {
                 const start = new Date(status.trialStartedAt);
                 const now = new Date();
@@ -33,8 +57,10 @@ function App() {
                 if (diffDays <= 5) {
                     setIsAuthenticated(true);
                 }
+                setLoading(false);
+            } else {
+                setLoading(false);
             }
-            setLoading(false);
         };
         check();
     }, []);
