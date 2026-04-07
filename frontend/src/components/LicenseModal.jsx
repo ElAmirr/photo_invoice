@@ -118,14 +118,15 @@ const LicenseModal = ({ onAuthenticated }) => {
                         </div>
                         <input
                             type="text"
-                            placeholder="XXXX-XXXX-XXXX-XXXX"
+                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                             style={{
                                 width: '100%', backgroundColor: '#0f172a', border: '1px solid #334155',
                                 borderRadius: '12px', padding: '14px 14px 14px 44px', color: 'white',
-                                fontSize: '15px', outline: 'none', transition: 'border-color 0.2s'
+                                fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
+                                fontFamily: 'monospace'
                             }}
                             value={key}
-                            onChange={(e) => setKey(e.target.value.toUpperCase())}
+                            onChange={(e) => setKey(e.target.value)}
                         />
                     </div>
 
