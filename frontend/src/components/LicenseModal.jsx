@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Lock, Smartphone, ShieldCheck, Clock, Key } from 'lucide-react';
+import { Lock, Smartphone, ShieldCheck, Clock, Key, Shield } from 'lucide-react';
 
 const LicenseModal = ({ onAuthenticated }) => {
     const [key, setKey] = useState('');
