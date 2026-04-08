@@ -45,8 +45,13 @@ function App() {
                         await window.electron.deleteLicense();
                         setIsAuthenticated(false);
                     } else {
+                        // DEBUG: Log server response to help identify missing fields
+                        console.log('Heartbeat response:', response.data);
+                        
                         // Update local license with any new info from server (e.g. expiration date)
-                        const expiryDate = response.data.expiresAt || response.data.expires_at || null;
+                        // Use existing status.expiresAt as fallback if server doesn't return it
+                        const expiryDate = response.data.expiresAt || response.data.expires_at || status.expiresAt || null;
+                        
                         await window.electron.saveLicense({
                             ...status,
                             expiresAt: expiryDate,

@@ -44,6 +44,9 @@ const LicenseModal = ({ onAuthenticated }) => {
             );
 
             if (response.data.success) {
+                // DEBUG: Show what the server actually sent
+                console.log('Server activation response:', response.data);
+
                 const expiryDate = response.data.expiresAt || response.data.expires_at || null;
                 await window.electron.saveLicense({
                     activated: true,
