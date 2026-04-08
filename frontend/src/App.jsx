@@ -46,9 +46,10 @@ function App() {
                         setIsAuthenticated(false);
                     } else {
                         // Update local license with any new info from server (e.g. expiration date)
+                        const expiryDate = response.data.expiresAt || response.data.expires_at || null;
                         await window.electron.saveLicense({
                             ...status,
-                            expiresAt: response.data.expiresAt, // Server should return this
+                            expiresAt: expiryDate,
                             lastChecked: new Date().toISOString()
                         });
                     }

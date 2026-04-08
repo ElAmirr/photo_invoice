@@ -180,14 +180,14 @@ const CompanySettings = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Type de plan</span>
                             <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
-                                {licenseInfo?.expiresAt ? 'Abonnement Mensuel' : 'Licence à vie (Lifetime)'}
+                                {(licenseInfo?.expiresAt || licenseInfo?.expires_at) ? 'Abonnement Mensuel' : 'Licence à vie (Lifetime)'}
                             </span>
                         </div>
-                        {licenseInfo?.expiresAt && (
+                        {(licenseInfo?.expiresAt || licenseInfo?.expires_at) && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Date d'expiration</span>
                                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#e11d48' }}>
-                                    {new Date(licenseInfo.expiresAt).toLocaleDateString()}
+                                    {new Date(licenseInfo.expiresAt || licenseInfo.expires_at).toLocaleDateString()}
                                 </span>
                             </div>
                         )}
