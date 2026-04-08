@@ -29,11 +29,17 @@ const CompanySettings = () => {
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
 
-        // Fetch license info from Electron
+        // Fetch license info from Electron, then re-fetch after heartbeat completes
         if (window.electron) {
             window.electron.checkLicense().then(info => {
                 setLicenseInfo(info);
             });
+            // Re-fetch after 5s to pick up expiresAt written by the background heartbeat
+            setTimeout(() => {
+                window.electron.checkLicense().then(info => {
+                    setLicenseInfo(info);
+                });
+            }, 5000);
         }
     }, []);
 
