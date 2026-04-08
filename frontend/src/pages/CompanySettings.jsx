@@ -15,8 +15,10 @@ const CompanySettings = () => {
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [licenseInfo, setLicenseInfo] = useState(null);
 
     useEffect(() => {
+        // Fetch company info
         api.get('/company')
             .then(res => {
                 if (res.data.id) {
@@ -26,6 +28,13 @@ const CompanySettings = () => {
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
+
+        // Fetch license info from Electron
+        if (window.electron) {
+            window.electron.checkLicense().then(info => {
+                setLicenseInfo(info);
+            });
+        }
     }, []);
 
     const handleChange = (e) => {
@@ -142,7 +151,48 @@ const CompanySettings = () => {
                     </div>
                 </div>
 
-                <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
+                <div style={{ gridColumn: 'span 2', marginTop: '30px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--primary)' }}>Licence & Abonnement</h2>
+                        <div style={{
+                            background: 'var(--primary)',
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                        }}>
+                            Active
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Clé de licence</span>
+                            <code style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{licenseInfo?.key || 'N/A'}</code>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Type de plan</span>
+                            <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                                {licenseInfo?.expiresAt ? 'Abonnement Mensuel' : 'Licence à vie (Lifetime)'}
+                            </span>
+                        </div>
+                        {licenseInfo?.expiresAt && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Date d'expiration</span>
+                                <span style={{ fontSize: '14px', fontWeight: '700', color: '#e11d48' }}>
+                                    {new Date(licenseInfo.expiresAt).toLocaleDateString()}
+                                </span>
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>ID Machine (HWID)</span>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>{licenseInfo?.hwid || 'Chargement...'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ gridColumn: 'span 2', marginTop: '20px' }}>
                     <button type="submit" className="btn btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>
                         <Save size={18} />
                         {saving ? 'Enregistrement...' : 'Enregistrer les paramètres du studio'}

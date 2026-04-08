@@ -44,6 +44,13 @@ function App() {
                         console.error('License revoked by server:', response.data.message);
                         await window.electron.deleteLicense();
                         setIsAuthenticated(false);
+                    } else {
+                        // Update local license with any new info from server (e.g. expiration date)
+                        await window.electron.saveLicense({
+                            ...status,
+                            expiresAt: response.data.expiresAt, // Server should return this
+                            lastChecked: new Date().toISOString()
+                        });
                     }
                 } catch (err) {
                     // Ignore network errors/timeouts (allow offline usage if already activated)
