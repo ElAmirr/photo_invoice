@@ -46,9 +46,10 @@ const LicenseModal = ({ onAuthenticated }) => {
             if (response.data.success) {
                 await window.electron.saveLicense({
                     activated: true,
-                    key: key,
+                    key: key.trim(),
                     hwid: hwid,
-                    activatedAt: new Date().toISOString()
+                    activatedAt: new Date().toISOString(),
+                    expiresAt: response.data.expiresAt || null // null = Lifetime
                 });
                 onAuthenticated();
             } else {

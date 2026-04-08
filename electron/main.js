@@ -4,6 +4,19 @@ const path = require('path');
 const fs = require('fs');
 const { machineIdSync } = require('node-machine-id');
 const crypto = require('crypto');
+const LICENSE_SERVER = 'https://photo-invoice-licence-sever.onrender.com';
+
+async function notifyServer(endpoint, body) {
+    try {
+        await fetch(`${LICENSE_SERVER}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+    } catch (err) {
+        console.error(`Server notification failed [${endpoint}]:`, err.message);
+    }
+}
 
 // Encryption Config
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
@@ -169,6 +182,27 @@ if (!singleInstanceLock) {
             checkUpdates();
         }
         createWindow();
+
+        // Heartbeat Loop (Check every 5 minutes)
+        setInterval(async () => {
+            const p = getLicensePath();
+            if (fs.existsSync(p)) {
+                try {
+                    const encryptedData = fs.readFileSync(p, 'utf8');
+                    const decryptedData = decrypt(encryptedData);
+                    if (!decryptedData) return;
+                    const data = JSON.parse(decryptedData);
+
+                    if (data.activated && data.key) {
+                        notifyServer('/api/activate/heartbeat', { key: data.key, hwid: data.hwid });
+                    } else if (data.trialStartedAt) {
+                        notifyServer('/api/trials/heartbeat', { hwid: data.hwid });
+                    }
+                } catch (err) {
+                    console.error('Heartbeat interval error:', err);
+                }
+            }
+        }, 5 * 60 * 1000);
     });
 }
 app.on('window-all-closed', function () {
@@ -263,6 +297,10 @@ ipcMain.handle('start-trial', () => {
     try {
         const encrypted = encrypt(JSON.stringify(trialData));
         fs.writeFileSync(p, encrypted);
+
+        // Notify Server
+        notifyServer('/api/trials/start', { hwid: trialData.hwid });
+
         return true;
     } catch (err) {
         return false;
