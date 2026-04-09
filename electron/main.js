@@ -6,18 +6,6 @@ const { machineIdSync } = require('node-machine-id');
 const crypto = require('crypto');
 const LICENSE_SERVER = 'https://photo-invoice-licence-sever.onrender.com';
 
-async function notifyServer(endpoint, body) {
-    try {
-        await fetch(`${LICENSE_SERVER}${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-    } catch (err) {
-        console.error(`Server notification failed [${endpoint}]:`, err.message);
-    }
-}
-
 // Encryption Config
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
 const ENCRYPTION_KEY_SALT = 'shootix_secure_salt_2026';
@@ -194,9 +182,15 @@ if (!singleInstanceLock) {
                     const data = JSON.parse(decryptedData);
 
                     if (data.activated && data.key) {
-                        notifyServer('/api/activate/heartbeat', { key: data.key, hwid: data.hwid });
-                    } else if (data.trialStartedAt) {
-                        notifyServer('/api/trials/heartbeat', { hwid: data.hwid });
+                        try {
+                            await fetch(`${LICENSE_SERVER}/api/activate/heartbeat`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ key: data.key, hwid: data.hwid })
+                            });
+                        } catch (err) {
+                            console.error('Heartbeat ping failed:', err.message);
+                        }
                     }
                 } catch (err) {
                     console.error('Heartbeat interval error:', err);
@@ -268,12 +262,7 @@ ipcMain.handle('save-license', (event, licenseData) => {
         const encrypted = encrypt(JSON.stringify(licenseData));
         fs.writeFileSync(getLicensePath(), encrypted);
 
-        // Notify server immediately
-        if (licenseData.activated && licenseData.key) {
-            notifyServer('/api/activate/heartbeat', { key: licenseData.key, hwid: licenseData.hwid });
-        } else if (licenseData.trialStartedAt) {
-            notifyServer('/api/trials/heartbeat', { hwid: licenseData.hwid });
-        }
+        // Notify server immediately if needed (usually handled by frontend activation)
 
         return true;
     } catch (err) {
@@ -291,26 +280,3 @@ ipcMain.handle('delete-license', () => {
     }
 });
 
-ipcMain.handle('start-trial', () => {
-    const p = getLicensePath();
-    if (fs.existsSync(p)) return;
-
-    const trialData = {
-        activated: false,
-        trialStartedAt: new Date().toISOString(),
-        trialDays: 5,
-        hwid: machineIdSync()
-    };
-
-    try {
-        const encrypted = encrypt(JSON.stringify(trialData));
-        fs.writeFileSync(p, encrypted);
-
-        // Notify Server
-        notifyServer('/api/trials/start', { hwid: trialData.hwid });
-
-        return true;
-    } catch (err) {
-        return false;
-    }
-});
