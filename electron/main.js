@@ -171,8 +171,8 @@ if (!singleInstanceLock) {
         }
         createWindow();
 
-        // Heartbeat Loop (Check every 5 minutes)
-        setInterval(async () => {
+        // Heartbeat Logic
+        const performHeartbeat = async () => {
             const p = getLicensePath();
             if (fs.existsSync(p)) {
                 try {
@@ -188,10 +188,19 @@ if (!singleInstanceLock) {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ key: data.key, hwid: data.hwid })
                             });
-                            const result = await response.json();
 
+                            // Handle explicit revocation (404/403) or JSON success:false
+                            if (response.status === 404 || response.status === 403) {
+                                console.log(`Heartbeat: License revoked (Status ${response.status}). Locking app...`);
+                                const p2 = getLicensePath();
+                                if (fs.existsSync(p2)) fs.unlinkSync(p2);
+                                if (mainWindow) mainWindow.webContents.send('license-revoked');
+                                return;
+                            }
+
+                            const result = await response.json();
                             if (result && result.success === false) {
-                                console.log('Heartbeat: License revoked. Locking app...');
+                                console.log('Heartbeat: License revoked (JSON). Locking app...');
                                 const p2 = getLicensePath();
                                 if (fs.existsSync(p2)) fs.unlinkSync(p2);
                                 if (mainWindow) mainWindow.webContents.send('license-revoked');
@@ -201,10 +210,16 @@ if (!singleInstanceLock) {
                         }
                     }
                 } catch (err) {
-                    console.error('Heartbeat interval error:', err);
+                    console.error('Heartbeat check error:', err);
                 }
             }
-        }, 5 * 60 * 1000);
+        };
+
+        // Run immediately on startup
+        performHeartbeat();
+
+        // Then repeat every 5 minutes
+        setInterval(performHeartbeat, 5 * 60 * 1000);
     });
 }
 app.on('window-all-closed', function () {

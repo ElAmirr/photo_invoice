@@ -59,8 +59,15 @@ function App() {
                         });
                     }
                 } catch (err) {
-                    // Ignore network errors/timeouts (allow offline usage if already activated)
-                    console.log('Background verification skipped (Offline/Timeout)');
+                    // Check for explicit revocation (404 = key deleted, 403 = unauthorized)
+                    if (err.response && (err.response.status === 404 || err.response.status === 403)) {
+                        console.error('License explicitly revoked by server:', err.response.status);
+                        await window.electron.deleteLicense();
+                        setIsAuthenticated(false);
+                    } else {
+                        // Network error/timeout - allow offline usage if already activated
+                        console.log('Background verification skipped (Offline/Timeout)');
+                    }
                 }
             }
             setLoading(false);

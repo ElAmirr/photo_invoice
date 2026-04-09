@@ -159,7 +159,7 @@ const CompanySettings = () => {
 
                 <div style={{ gridColumn: 'span 2', marginTop: '30px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--primary)' }}>Licence & Abonnement</h2>
+                        <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--primary)' }}>Payment Plan</h2>
                         <div style={{
                             background: 'var(--primary)',
                             color: 'white',
@@ -174,10 +174,6 @@ const CompanySettings = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Clé de licence</span>
-                            <code style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{licenseInfo?.key || 'N/A'}</code>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Type de plan</span>
                             <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
                                 {(licenseInfo?.expiresAt || licenseInfo?.expires_at) ? 'Abonnement Mensuel' : 'Licence à vie (Lifetime)'}
@@ -191,6 +187,10 @@ const CompanySettings = () => {
                                 </span>
                             </div>
                         )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Clé de licence</span>
+                            <code style={{ fontSize: '11px', color: '#64748b' }}>{licenseInfo?.key || 'N/A'}</code>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>ID Machine (HWID)</span>
                             <span style={{ fontSize: '11px', color: '#64748b' }}>{licenseInfo?.hwid || 'Chargement...'}</span>
