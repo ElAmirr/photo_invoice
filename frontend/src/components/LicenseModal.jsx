@@ -72,6 +72,18 @@ const LicenseModal = ({ onAuthenticated }) => {
 
     const handleStartTrial = async () => {
         setLoading(true);
+
+        // Notify server about trial start (best effort, don't block on error)
+        try {
+            await axios.post(
+                'https://photo-invoice-licence-sever.onrender.com/api/trial/start',
+                { hwid: hwid },
+                { timeout: 5000 }
+            );
+        } catch (err) {
+            console.warn('Could not notify server about trial start:', err.message);
+        }
+
         await window.electron.startTrial();
         setTrialStatus({ remaining: 5, isExpired: false });
         setLoading(false);

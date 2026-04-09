@@ -267,6 +267,14 @@ ipcMain.handle('save-license', (event, licenseData) => {
     try {
         const encrypted = encrypt(JSON.stringify(licenseData));
         fs.writeFileSync(getLicensePath(), encrypted);
+
+        // Notify server immediately
+        if (licenseData.activated && licenseData.key) {
+            notifyServer('/api/activate/heartbeat', { key: licenseData.key, hwid: licenseData.hwid });
+        } else if (licenseData.trialStartedAt) {
+            notifyServer('/api/trials/heartbeat', { hwid: licenseData.hwid });
+        }
+
         return true;
     } catch (err) {
         return false;
