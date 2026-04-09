@@ -183,13 +183,21 @@ if (!singleInstanceLock) {
 
                     if (data.activated && data.key) {
                         try {
-                            await fetch(`${LICENSE_SERVER}/api/activate/heartbeat`, {
+                            const response = await fetch(`${LICENSE_SERVER}/api/activate`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ key: data.key, hwid: data.hwid })
                             });
+                            const result = await response.json();
+
+                            if (result && result.success === false) {
+                                console.log('Heartbeat: License revoked. Locking app...');
+                                const p2 = getLicensePath();
+                                if (fs.existsSync(p2)) fs.unlinkSync(p2);
+                                if (mainWindow) mainWindow.webContents.send('license-revoked');
+                            }
                         } catch (err) {
-                            console.error('Heartbeat ping failed:', err.message);
+                            console.error('Heartbeat ping failed (Networking):', err.message);
                         }
                     }
                 } catch (err) {

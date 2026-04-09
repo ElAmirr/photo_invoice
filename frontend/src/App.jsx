@@ -66,6 +66,14 @@ function App() {
             setLoading(false);
         };
         check();
+
+        // Listen for background revocation from main process
+        if (window.electron && window.electron.onLicenseRevoked) {
+            window.electron.onLicenseRevoked(() => {
+                console.warn('License revoked in background. Resetting auth state.');
+                setIsAuthenticated(false);
+            });
+        }
     }, []);
 
     if (loading) return null;
