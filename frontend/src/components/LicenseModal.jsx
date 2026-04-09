@@ -7,24 +7,12 @@ const LicenseModal = ({ onAuthenticated }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [hwid, setHwid] = useState('');
-    const [trialStatus, setTrialStatus] = useState(null);
 
     useEffect(() => {
         const init = async () => {
             if (!window.electron) return;
             const id = await window.electron.getHwid();
             setHwid(id);
-            const status = await window.electron.checkLicense();
-            if (status.trialStartedAt) {
-                const start = new Date(status.trialStartedAt);
-                const now = new Date();
-                const diffTime = Math.abs(now - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                setTrialStatus({
-                    remaining: Math.max(0, 5 - diffDays),
-                    isExpired: diffDays > 5
-                });
-            }
         };
         init();
     }, []);
@@ -70,25 +58,6 @@ const LicenseModal = ({ onAuthenticated }) => {
         }
     };
 
-    const handleStartTrial = async () => {
-        setLoading(true);
-
-        // Notify server about trial start (best effort, don't block on error)
-        try {
-            await axios.post(
-                'https://photo-invoice-licence-sever.onrender.com/api/trial/start',
-                { hwid: hwid },
-                { timeout: 5000 }
-            );
-        } catch (err) {
-            console.warn('Could not notify server about trial start:', err.message);
-        }
-
-        await window.electron.startTrial();
-        setTrialStatus({ remaining: 5, isExpired: false });
-        setLoading(false);
-        onAuthenticated(); // Close modal and unlock app
-    };
 
     return (
         <div style={{
@@ -199,44 +168,10 @@ const LicenseModal = ({ onAuthenticated }) => {
                         </button>
                     </form>
 
-                    <div style={{
-                        marginTop: '24px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '16px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
-                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' }}>OU</span>
-                            <div style={{ flex: 1, height: '1px', backgroundColor: '#334155' }}></div>
-                        </div>
-
-                        <button
-                            onClick={handleStartTrial}
-                            disabled={loading || (trialStatus && trialStatus.isExpired)}
-                            style={{
-                                width: '100%',
-                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                color: (trialStatus && trialStatus.isExpired) ? '#64748b' : 'white',
-                                border: '1px solid #334155',
-                                borderRadius: '12px',
-                                padding: '14px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: (loading || (trialStatus && trialStatus.isExpired)) ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px'
-                            }}
-                            onMouseEnter={(e) => { if (!loading && (!trialStatus || !trialStatus.isExpired)) e.currentTarget.style.borderColor = '#9333EA' }}
-                            onMouseLeave={(e) => { if (!loading && (!trialStatus || !trialStatus.isExpired)) e.currentTarget.style.borderColor = '#334155' }}
-                        >
-                            {trialStatus ? (
-                                trialStatus.isExpired ? 'Essai expiré' : `Continuer l'essai (${trialStatus.remaining} jours restants)`
-                            ) : "Démarrer l'essai gratuit (5 jours)"}
-                        </button>
+                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                        <p style={{ color: '#94a3b8', fontSize: '13px' }}>
+                            Pas de clé ? <a href="https://shootix.tn" target="_blank" rel="noopener noreferrer" style={{ color: '#A855F7', fontWeight: '600', textDecoration: 'none' }} onClick={(e) => { e.preventDefault(); window.open('https://shootix.tn', '_blank'); }}>Obtenir une clé d'essai</a>
+                        </p>
                     </div>
 
                     <div style={{ marginTop: '30px', textAlign: 'center' }}>

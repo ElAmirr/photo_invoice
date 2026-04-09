@@ -47,11 +47,11 @@ function App() {
                     } else {
                         // DEBUG: Log server response to help identify missing fields
                         console.log('Heartbeat response:', response.data);
-                        
+
                         // Update local license with any new info from server (e.g. expiration date)
                         // Use existing status.expiresAt as fallback if server doesn't return it
                         const expiryDate = response.data.expiresAt || response.data.expires_at || status.expiresAt || null;
-                        
+
                         await window.electron.saveLicense({
                             ...status,
                             expiresAt: expiryDate,
@@ -62,18 +62,8 @@ function App() {
                     // Ignore network errors/timeouts (allow offline usage if already activated)
                     console.log('Background verification skipped (Offline/Timeout)');
                 }
-            } else if (status.trialStartedAt) {
-                const start = new Date(status.trialStartedAt);
-                const now = new Date();
-                const diffTime = Math.abs(now - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if (diffDays <= 5) {
-                    setIsAuthenticated(true);
-                }
-                setLoading(false);
-            } else {
-                setLoading(false);
             }
+            setLoading(false);
         };
         check();
     }, []);
