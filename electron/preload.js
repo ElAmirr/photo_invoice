@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('electron', {
     saveLicense: (data) => ipcRenderer.invoke('save-license', data),
     deleteLicense: () => ipcRenderer.invoke('delete-license'),
     startTrial: () => ipcRenderer.invoke('start-trial'),
+    getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     onLicenseRevoked: (callback) => ipcRenderer.on('license-revoked', (event, ...args) => callback(...args))
 });

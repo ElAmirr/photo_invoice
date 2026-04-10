@@ -33,9 +33,15 @@ function App() {
                 // Background Re-validation (Heartbeat)
                 try {
                     const hwid = await window.electron.getHwid();
+                    const appInfo = await window.electron.getAppInfo();
                     const response = await axios.post(
                         'https://photo-invoice-licence-sever.onrender.com/api/activate',
-                        { key: status.key, hwid: hwid },
+                        {
+                            key: status.key,
+                            hwid: hwid,
+                            version: appInfo.version,
+                            os: appInfo.os
+                        },
                         { timeout: 10000 } // 10s timeout
                     );
 

@@ -25,9 +25,15 @@ const LicenseModal = ({ onAuthenticated }) => {
         setError('');
 
         try {
+            const appInfo = await window.electron.getAppInfo();
             const response = await axios.post(
                 'https://photo-invoice-licence-sever.onrender.com/api/activate',
-                { key: key.trim(), hwid: hwid },
+                {
+                    key: key.trim(),
+                    hwid: hwid,
+                    version: appInfo.version,
+                    os: appInfo.os
+                },
                 { timeout: 40000 } // 40s timeout for Render cold starts
             );
 

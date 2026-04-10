@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, utilityProcess, ipcMain } = require('electro
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { machineIdSync } = require('node-machine-id');
 const crypto = require('crypto');
 const LICENSE_SERVER = 'https://photo-invoice-licence-sever.onrender.com';
@@ -186,7 +187,12 @@ if (!singleInstanceLock) {
                             const response = await fetch(`${LICENSE_SERVER}/api/activate`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ key: data.key, hwid: data.hwid })
+                                body: JSON.stringify({
+                                    key: data.key,
+                                    hwid: data.hwid,
+                                    version: app.getVersion(),
+                                    os: `${process.platform} ${os.release()}`
+                                })
                             });
 
                             // Handle explicit revocation (404/403) or JSON success:false
@@ -251,6 +257,32 @@ ipcMain.handle('get-hwid', () => {
     } catch (err) {
         console.error('HWID Error:', err);
         return 'unknown-hwid';
+    }
+});
+
+ipcMain.handle('get-app-info', () => {
+    return {
+        version: app.getVersion(),
+        os: `${process.platform} ${os.release()}`
+    };
+});
+
+ipcMain.handle('start-trial', async () => {
+    try {
+        const hwid = machineIdSync();
+        const response = await fetch(`${LICENSE_SERVER}/api/trials/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                hwid,
+                version: app.getVersion(),
+                os: `${process.platform} ${os.release()}`
+            })
+        });
+        return await response.json();
+    } catch (err) {
+        console.error('Start Trial Error:', err);
+        return { success: false, message: "Connection error" };
     }
 });
 
