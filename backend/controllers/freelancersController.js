@@ -48,18 +48,32 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+    const conn = await pool.getConnection();
     try {
-        await pool.query('DELETE FROM freelancers WHERE id=?', [req.params.id]);
-        res.json({ message: 'Deleted' });
+        await conn.beginTransaction();
+        const id = req.params.id;
+
+        // 1. Delete associated shooting assignments
+        await conn.query('DELETE FROM shooting_freelancers WHERE freelancer_id=?', [id]);
+
+        // 2. Delete the freelancer itself
+        await conn.query('DELETE FROM freelancers WHERE id=?', [id]);
+
+        await conn.commit();
+        res.json({ message: 'Freelancer and their assignments deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        await conn.rollback();
+        console.error('Delete Freelancer Error:', err);
+        res.status(500).json({ error: 'Failed to delete freelancer: ' + err.message });
+    } finally {
+        conn.release();
     }
 };
 
 exports.getAnalytics = async (req, res) => {
     try {
         const freelancerId = req.params.id;
-        
+
         // Get shooting freelancer assignments and calculate earnings
         const [analyticsData] = await pool.query(`
             SELECT 

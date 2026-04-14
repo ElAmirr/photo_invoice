@@ -194,12 +194,28 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+    const conn = await pool.getConnection();
     try {
-        await pool.query("DELETE FROM invoice_items WHERE type='facture' AND parent_id=?", [req.params.id]);
-        await pool.query('DELETE FROM factures WHERE id=?', [req.params.id]);
-        res.json({ message: 'Deleted' });
+        await conn.beginTransaction();
+        const id = req.params.id;
+
+        // 1. Delete associated payments
+        await conn.query('DELETE FROM payments WHERE facture_id=?', [id]);
+
+        // 2. Delete invoice items
+        await conn.query("DELETE FROM invoice_items WHERE type='facture' AND parent_id=?", [id]);
+
+        // 3. Delete the facture itself
+        await conn.query('DELETE FROM factures WHERE id=?', [id]);
+
+        await conn.commit();
+        res.json({ message: 'Facture and related payments/items deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        await conn.rollback();
+        console.error('Delete Facture Error:', err);
+        res.status(500).json({ error: 'Failed to delete facture: ' + err.message });
+    } finally {
+        conn.release();
     }
 };
 

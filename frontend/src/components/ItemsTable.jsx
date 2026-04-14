@@ -1,14 +1,19 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useConfirm } from './ConfirmDialog';
 
 const ItemsTable = ({ items, setItems, tvaSuspended }) => {
+    const { confirm } = useConfirm();
     const addItem = () => {
         setItems([...items, { description: '', days: '', quantity: 1, unit_price: 0, total_price: 0 }]);
     };
 
-    const removeItem = (index) => {
-        const newItems = items.filter((_, i) => i !== index);
-        setItems(newItems);
+    const removeItem = async (index) => {
+        const ok = await confirm('Retirer cet article de la liste ?', 'Retrait');
+        if (ok) {
+            const newItems = items.filter((_, i) => i !== index);
+            setItems(newItems);
+        }
     };
 
     const handleChange = (index, field, value) => {

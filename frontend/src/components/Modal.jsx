@@ -1,27 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = '800px', hideHeader = false }) => {
     const previousFocusRef = useRef(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            // Save current focus
-            previousFocusRef.current = document.activeElement;
-        } else if (previousFocusRef.current) {
-            // Restore focus after a short delay to ensure modal is gone
-            const elementToFocus = previousFocusRef.current;
-            setTimeout(() => {
-                if (elementToFocus && typeof elementToFocus.focus === 'function') {
-                    elementToFocus.focus();
-                } else {
-                    document.body.focus();
-                }
-            }, 100);
-            previousFocusRef.current = null;
-        }
-    }, [isOpen]);
-
+    // ... existing useEffect ...
     if (!isOpen) return null;
 
     return (
@@ -46,23 +28,26 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         >
             <div className="card" style={{
                 width: '90%',
-                maxWidth: '800px',
+                maxWidth: maxWidth,
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 position: 'relative',
-                cursor: 'default'
+                cursor: 'default',
+                padding: hideHeader ? '40px' : '24px'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700' }}>{title}</h2>
-                    <button onClick={onClose} style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text-muted)'
-                    }}>
-                        <X size={24} />
-                    </button>
-                </div>
+                {!hideHeader && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: '700' }}>{title}</h2>
+                        <button onClick={onClose} style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--text-muted)'
+                        }}>
+                            <X size={24} />
+                        </button>
+                    </div>
+                )}
                 {children}
             </div>
         </div>

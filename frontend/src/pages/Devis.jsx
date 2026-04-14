@@ -20,9 +20,11 @@ import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const Devis = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [devis, setDevis] = useState([]);
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
@@ -127,7 +129,7 @@ const Devis = () => {
             }
             fetchData();
             handleClose();
-            addToast('✅ Devis enregistré avec succès !', 'success');
+            addToast('Devis enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement du devis: ' + (err.response?.data?.error || err.message), 'error');
@@ -135,9 +137,16 @@ const Devis = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer ce devis ?')) {
-            await api.delete(`/devis/${id}`);
-            fetchData();
+        const ok = await confirm('Supprimer ce devis ?', 'Suppression');
+        if (ok) {
+            try {
+                await api.delete(`/devis/${id}`);
+                fetchData();
+                addToast('Devis supprimé', 'success');
+            } catch (err) {
+                console.error(err);
+                addToast('Erreur lors de la suppression', 'error');
+            }
         }
     };
 
@@ -160,7 +169,7 @@ const Devis = () => {
             await api.post(`/devis/${convModal.devisId}/convert`, convModal.form);
             setConvModal({ ...convModal, isOpen: false });
             fetchData();
-            addToast('✅ Shooting planifié et Facture générée avec succès !', 'success');
+            addToast('Shooting planifié et Facture générée avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message), 'error');

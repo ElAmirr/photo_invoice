@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import DatePicker from 'react-datepicker';
 
 const Expenses = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [expenses, setExpenses] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -89,7 +91,7 @@ const Expenses = () => {
             await api.post('/expenses', formData);
             setShowModal(false);
             fetchData();
-            addToast('✅ Dépense enregistrée avec succès !', 'success');
+            addToast('Dépense enregistrée avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement de la dépense', 'error');
@@ -103,7 +105,7 @@ const Expenses = () => {
             await api.post('/expenses/categories', { name: newCategoryName });
             setNewCategoryName('');
             fetchData();
-            addToast('✅ Catégorie ajoutée', 'success');
+            addToast('Catégorie ajoutée', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'ajout de la catégorie', 'error');
@@ -111,10 +113,12 @@ const Expenses = () => {
     };
 
     const handleDeleteCategory = async (id) => {
+        const ok = await confirm('Supprimer cette catégorie ?', 'Suppression');
+        if (!ok) return;
         try {
             await api.delete(`/expenses/categories/${id}`);
             fetchData();
-            addToast('✅ Catégorie supprimée', 'success');
+            addToast('Catégorie supprimée', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur: Impossible de supprimer une catégorie utilisée par des dépenses.', 'error');
@@ -128,7 +132,7 @@ const Expenses = () => {
             setEditingCategory(null);
             setEditingName('');
             fetchData();
-            addToast('✅ Catégorie modifiée', 'success');
+            addToast('Catégorie modifiée', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de la modification de la catégorie', 'error');
@@ -136,11 +140,12 @@ const Expenses = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer cette dépense ?')) {
+        const ok = await confirm('Supprimer cette dépense ?', 'Suppression');
+        if (ok) {
             try {
                 await api.delete(`/expenses/${id}`);
                 fetchData();
-                addToast('✅ Dépense supprimée', 'success');
+                addToast('Dépense supprimée', 'success');
             } catch (err) {
                 console.error(err);
                 addToast('Erreur lors de la suppression', 'error');

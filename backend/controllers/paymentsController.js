@@ -126,12 +126,13 @@ exports.remove = async (req, res) => {
 
         if (factureId) {
             await syncFactureStatus(factureId);
-        } else {
+        } else if (shootingId) {
             await syncInvoiceStatus(shootingId);
         }
 
         res.json({ message: 'Deleted' });
     } catch (err) {
+        console.error('Delete Payment Error:', err);
         res.status(500).json({ error: err.message });
     }
 };

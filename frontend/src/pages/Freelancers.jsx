@@ -3,9 +3,11 @@ import api from '../api/axios';
 import Modal from '../components/Modal';
 import { Plus, Edit, Trash2, Search, Phone, Briefcase, Wallet, UserCog } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const Freelancers = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [freelancers, setFreelancers] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ const Freelancers = () => {
             }
             fetchFreelancers();
             handleClose();
-            addToast('✅ Coéquiper enregistré avec succès !', 'success');
+            addToast('Coéquiper enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement', 'error');
@@ -61,9 +63,11 @@ const Freelancers = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer ce freelancer ?')) {
+        const ok = await confirm('Supprimer ce freelancer ?', 'Suppression');
+        if (ok) {
             await api.delete(`/freelancers/${id}`);
             fetchFreelancers();
+            addToast('Coéquiper supprimé', 'success');
         }
     };
 

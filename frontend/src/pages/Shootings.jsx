@@ -32,12 +32,14 @@ import {
     isValid
 } from 'date-fns';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
 
 const Shootings = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [shootings, setShootings] = useState([]);
     const [clients, setClients] = useState([]);
     const [freelancers, setFreelancers] = useState([]);
@@ -109,7 +111,7 @@ const Shootings = () => {
             }
             fetchData();
             setModal({ isOpen: false, data: null });
-            addToast('✅ Shooting enregistré avec succès !', 'success');
+            addToast('Shooting enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement', 'error');
@@ -117,9 +119,16 @@ const Shootings = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer ce shooting ?')) {
-            await api.delete(`/shootings/${id}`);
-            fetchData();
+        const ok = await confirm('Supprimer ce shooting ?', 'Suppression');
+        if (ok) {
+            try {
+                await api.delete(`/shootings/${id}`);
+                fetchData();
+                addToast('Shooting supprimé', 'success');
+            } catch (err) {
+                console.error(err);
+                addToast('Erreur lors de la suppression', 'error');
+            }
         }
     };
 
@@ -136,11 +145,18 @@ const Shootings = () => {
         }
     };
 
-    const handleDeletePayment = async (id) => {
-        if (window.confirm('Supprimer ce paiement ?')) {
-            await api.delete(`/payments/${id}`);
-            handleOpenDetail(detailModal.data.id);
-            fetchData();
+    const handleRemovePayment = async (payId) => {
+        const ok = await confirm('Supprimer ce paiement ?', 'Suppression');
+        if (ok) {
+            try {
+                await api.delete(`/payments/${payId}`);
+                handleOpenDetail(detailModal.data.id);
+                fetchData();
+                addToast('Paiement supprimé', 'success');
+            } catch (err) {
+                console.error('Remove Payment Error:', err);
+                addToast('Erreur lors de la suppression', 'error');
+            }
         }
     };
 
@@ -157,9 +173,16 @@ const Shootings = () => {
     };
 
     const handleRemoveFreelancer = async (fId) => {
-        if (window.confirm('Retirer ce freelancer ?')) {
-            await api.delete(`/shootings/${detailModal.data.id}/freelancers/${fId}`);
-            handleOpenDetail(detailModal.data.id);
+        const ok = await confirm('Retirer ce freelancer ?', 'Retrait');
+        if (ok) {
+            try {
+                await api.delete(`/shootings/${detailModal.data.id}/freelancers/${fId}`);
+                handleOpenDetail(detailModal.data.id);
+                addToast('Coéquiper retiré', 'success');
+            } catch (err) {
+                console.error(err);
+                addToast('Erreur lors du retrait', 'error');
+            }
         }
     };
 
@@ -478,8 +501,26 @@ const Shootings = () => {
                                                     <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yy') : '-'}</td>
                                                     <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                                     <td>{p.method}</td>
-                                                    <td>
-                                                        <button onClick={() => handleDeletePayment(p.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                    <td style={{ textAlign: 'center' }}>
+                                                        <button
+                                                            onClick={() => handleRemovePayment(p.id)}
+                                                            style={{
+                                                                border: 'none',
+                                                                background: '#fee2e2',
+                                                                color: '#ef4444',
+                                                                cursor: 'pointer',
+                                                                padding: '6px',
+                                                                borderRadius: '6px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            className="btn-delete-hover"
+                                                            title="Supprimer le paiement"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}

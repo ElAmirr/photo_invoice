@@ -71,7 +71,7 @@ const CompanySettings = () => {
             const res = await api.put('/company', data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            addToast('✅ Paramètres enregistrés !', 'success');
+            addToast('Paramètres enregistrés !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement', 'error');

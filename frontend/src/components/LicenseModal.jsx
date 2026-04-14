@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import logo from '../assets/logo.png';
 import { Lock, Smartphone, ShieldCheck, Clock, Key, Shield } from 'lucide-react';
 
 const LicenseModal = ({ onAuthenticated }) => {
@@ -107,7 +108,7 @@ const LicenseModal = ({ onAuthenticated }) => {
                             margin: '0 auto 16px',
                             boxShadow: '0 10px 20px rgba(147, 51, 234, 0.3)'
                         }}>
-                            <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px' }} />
+                            <img src={logo} alt="Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
                         </div>
                         <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '8px' }}>Activation Shootix</h2>
                         <p style={{ color: '#94a3b8', fontSize: '14px' }}>Entrez votre clé pour débloquer votre studio</p>

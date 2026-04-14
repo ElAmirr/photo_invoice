@@ -12,6 +12,7 @@ import CompanySettings from './pages/CompanySettings';
 import LicenseModal from './components/LicenseModal';
 import axios from 'axios';
 import { ToastProvider } from './components/Toast';
+import { ConfirmProvider } from './components/ConfirmDialog';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -95,21 +96,23 @@ function App() {
 
     return (
         <ToastProvider>
-            {!isAuthenticated && <LicenseModal onAuthenticated={() => setIsAuthenticated(true)} />}
-            <Router>
-                <Routes>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={<Dashboard />} />
-                        <Route path="clients" element={<Clients />} />
-                        <Route path="shootings" element={<Shootings />} />
-                        <Route path="devis" element={<Devis />} />
-                        <Route path="factures" element={<Factures />} />
-                        <Route path="expenses" element={<Expenses />} />
-                        <Route path="freelancers" element={<Freelancers />} />
-                        <Route path="settings" element={<CompanySettings />} />
-                    </Route>
-                </Routes>
-            </Router>
+            <ConfirmProvider>
+                {!isAuthenticated && <LicenseModal onAuthenticated={() => setIsAuthenticated(true)} />}
+                <Router>
+                    <Routes>
+                        <Route path="/" element={<Layout />}>
+                            <Route index element={<Dashboard />} />
+                            <Route path="clients" element={<Clients />} />
+                            <Route path="shootings" element={<Shootings />} />
+                            <Route path="devis" element={<Devis />} />
+                            <Route path="factures" element={<Factures />} />
+                            <Route path="expenses" element={<Expenses />} />
+                            <Route path="freelancers" element={<Freelancers />} />
+                            <Route path="settings" element={<CompanySettings />} />
+                        </Route>
+                    </Routes>
+                </Router>
+            </ConfirmProvider>
         </ToastProvider>
     );
 }

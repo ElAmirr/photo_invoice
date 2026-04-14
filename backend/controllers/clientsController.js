@@ -49,9 +49,23 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
     try {
-        await pool.query('DELETE FROM clients WHERE id=?', [req.params.id]);
+        const clientId = req.params.id;
+
+        // Check for dependencies
+        const [devis] = await pool.query('SELECT id FROM devis WHERE client_id=? LIMIT 1', [clientId]);
+        const [factures] = await pool.query('SELECT id FROM factures WHERE client_id=? LIMIT 1', [clientId]);
+        const [shootings] = await pool.query('SELECT id FROM shootings WHERE client_id=? LIMIT 1', [clientId]);
+
+        if (devis.length || factures.length || shootings.length) {
+            return res.status(400).json({
+                error: 'Impossible de supprimer ce client car il possède des devis, factures ou shootings associés. Veuillez supprimer ces éléments d\'abord.'
+            });
+        }
+
+        await pool.query('DELETE FROM clients WHERE id=?', [clientId]);
         res.json({ message: 'Deleted' });
     } catch (err) {
+        console.error('Delete Client Error:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -59,7 +73,7 @@ exports.remove = async (req, res) => {
 exports.getAnalytics = async (req, res) => {
     try {
         const clientId = req.params.id;
-        
+
         // Get factures and payments aggregates
         const [factureData] = await pool.query(`
             SELECT 

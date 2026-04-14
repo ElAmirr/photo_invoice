@@ -21,9 +21,11 @@ import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const Factures = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [factures, setFactures] = useState([]);
     const [clients, setClients] = useState([]);
     const [shootings, setShootings] = useState([]);
@@ -163,7 +165,7 @@ const Factures = () => {
             setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
             setPaymentForm({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
             fetchData();
-            addToast('✅ Paiement ajouté avec succès !', 'success');
+            addToast('Paiement ajouté avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'ajout du paiement : ' + (err.response?.data?.error || err.message), 'error');
@@ -174,7 +176,8 @@ const Factures = () => {
         const remaining = Number(facture.total_amount || 0) - Number(facture.total_paid || 0);
         if (remaining <= 0) return;
 
-        if (window.confirm(`Marquer la facture ${facture.reference} comme payée (${remaining.toFixed(3)} TND) ?`)) {
+        const ok = await confirm(`Marquer la facture ${facture.reference} comme payée (${remaining.toFixed(3)} TND) ?`);
+        if (ok) {
             try {
                 await api.post('/payments', {
                     shooting_id: facture.shooting_id || null,
@@ -185,7 +188,7 @@ const Factures = () => {
                     note: 'Paiement rapide (un clic)'
                 });
                 fetchData();
-                addToast('✅ Facture marquée comme payée !', 'success');
+                addToast('Facture marquée comme payée !', 'success');
             } catch (err) {
                 console.error(err);
                 addToast('Erreur lors du paiement rapide', 'error');
@@ -193,14 +196,15 @@ const Factures = () => {
         }
     };
     const handleDeletePayment = async (id) => {
-        if (!window.confirm('Supprimer ce paiement ?')) return;
+        const ok = await confirm('Supprimer ce paiement ?', 'Suppression');
+        if (!ok) return;
         try {
             await api.delete(`/payments/${id}`);
             handleOpenDetail(detailModal.data.id);
             fetchData();
-            addToast('✅ Paiement supprimé', 'success');
+            addToast('Paiement supprimé', 'success');
         } catch (err) {
-            console.error(err);
+            console.error('Delete Payment Error:', err);
             addToast('Erreur lors de la suppression du paiement : ' + (err.response?.data?.error || err.message), 'error');
         }
     };
@@ -223,7 +227,7 @@ const Factures = () => {
             fetchData();
             handleClose();
             // Prevent focus freeze in Electron
-            addToast('✅ Facture enregistrée avec succès !', 'success');
+            addToast('Facture enregistrée avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message), 'error');
@@ -231,9 +235,16 @@ const Factures = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer cette facture ?')) {
-            await api.delete(`/factures/${id}`);
-            fetchData();
+        const ok = await confirm('Supprimer cette facture ?', 'Suppression');
+        if (ok) {
+            try {
+                await api.delete(`/factures/${id}`);
+                fetchData();
+                addToast('Facture supprimée', 'success');
+            } catch (err) {
+                console.error(err);
+                addToast('Erreur lors de la suppression', 'error');
+            }
         }
     };
 
@@ -628,8 +639,26 @@ const Factures = () => {
                                             <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                             <td>{p.method}</td>
                                             <td>{p.note || '-'}</td>
-                                            <td>
-                                                <button onClick={() => handleDeletePayment(p.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }} title="Supprimer">x</button>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <button
+                                                    onClick={() => handleDeletePayment(p.id)}
+                                                    style={{
+                                                        border: 'none',
+                                                        background: '#fee2e2',
+                                                        color: '#ef4444',
+                                                        cursor: 'pointer',
+                                                        padding: '6px',
+                                                        borderRadius: '6px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    className="btn-delete-hover"
+                                                    title="Supprimer le paiement"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

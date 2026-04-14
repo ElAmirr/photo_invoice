@@ -3,9 +3,11 @@ import api from '../api/axios';
 import Modal from '../components/Modal';
 import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin, Wallet, Users } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const Clients = () => {
     const { addToast } = useToast();
+    const { confirm } = useConfirm();
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ const Clients = () => {
             }
             fetchClients();
             handleClose();
-            addToast('✅ Client enregistré avec succès !', 'success');
+            addToast('Client enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
             addToast('Erreur lors de l\'enregistrement', 'error');
@@ -61,9 +63,11 @@ const Clients = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Supprimer ce client ?')) {
+        const ok = await confirm('Supprimer ce client ?', 'Suppression');
+        if (ok) {
             await api.delete(`/clients/${id}`);
             fetchClients();
+            addToast('Client supprimé', 'success');
         }
     };
 
