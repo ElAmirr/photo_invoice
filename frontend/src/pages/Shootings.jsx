@@ -31,11 +31,13 @@ import {
     isToday,
     isValid
 } from 'date-fns';
+import { useToast } from '../components/Toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
 
 const Shootings = () => {
+    const { addToast } = useToast();
     const [shootings, setShootings] = useState([]);
     const [clients, setClients] = useState([]);
     const [freelancers, setFreelancers] = useState([]);
@@ -107,8 +109,10 @@ const Shootings = () => {
             }
             fetchData();
             setModal({ isOpen: false, data: null });
+            addToast('✅ Shooting enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
+            addToast('Erreur lors de l\'enregistrement', 'error');
         }
     };
 

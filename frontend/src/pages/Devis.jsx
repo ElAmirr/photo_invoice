@@ -19,8 +19,10 @@ import {
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
+import { useToast } from '../components/Toast';
 
 const Devis = () => {
+    const { addToast } = useToast();
     const [devis, setDevis] = useState([]);
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
@@ -114,8 +116,8 @@ const Devis = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.client_id) return alert('Veuillez choisir un client');
-        if (items.length === 0) return alert('Veuillez ajouter au moins une ligne');
+        if (!form.client_id) return addToast('Veuillez choisir un client', 'error');
+        if (items.length === 0) return addToast('Veuillez ajouter au moins une ligne', 'error');
 
         try {
             if (modal.data) {
@@ -125,13 +127,10 @@ const Devis = () => {
             }
             fetchData();
             handleClose();
-            // Use setTimeout to prevent focus freeze in Electron
-            setTimeout(() => {
-                alert('✅ Devis enregistré avec succès !');
-            }, 100);
+            addToast('✅ Devis enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement du devis: ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de l\'enregistrement du devis: ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -161,13 +160,10 @@ const Devis = () => {
             await api.post(`/devis/${convModal.devisId}/convert`, convModal.form);
             setConvModal({ ...convModal, isOpen: false });
             fetchData();
-            // Use setTimeout to prevent focus trap in Electron after modal unmounts
-            setTimeout(() => {
-                alert('✅ Shooting planifié et Facture générée avec succès !');
-            }, 150);
+            addToast('✅ Shooting planifié et Facture générée avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -182,7 +178,7 @@ const Devis = () => {
             link.click();
         } catch (err) {
             console.error(err);
-            alert('Erreur lors du téléchargement du PDF');
+            addToast('Erreur lors du téléchargement du PDF', 'error');
         }
     };
 

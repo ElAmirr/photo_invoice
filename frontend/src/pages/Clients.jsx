@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
 import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin, Wallet, Users } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 const Clients = () => {
+    const { addToast } = useToast();
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -51,9 +53,10 @@ const Clients = () => {
             }
             fetchClients();
             handleClose();
+            addToast('✅ Client enregistré avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement');
+            addToast('Erreur lors de l\'enregistrement', 'error');
         }
     };
 

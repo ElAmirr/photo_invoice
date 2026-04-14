@@ -13,9 +13,11 @@ import {
     HandCoins
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '../components/Toast';
 import DatePicker from 'react-datepicker';
 
 const Expenses = () => {
+    const { addToast } = useToast();
     const [expenses, setExpenses] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -87,13 +89,10 @@ const Expenses = () => {
             await api.post('/expenses', formData);
             setShowModal(false);
             fetchData();
-            // Prevent focus freeze in Electron
-            setTimeout(() => {
-                alert('✅ Dépense enregistrée avec succès !');
-            }, 100);
+            addToast('✅ Dépense enregistrée avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement de la dépense');
+            addToast('Erreur lors de l\'enregistrement de la dépense', 'error');
         }
     };
 
@@ -104,20 +103,21 @@ const Expenses = () => {
             await api.post('/expenses/categories', { name: newCategoryName });
             setNewCategoryName('');
             fetchData();
+            addToast('✅ Catégorie ajoutée', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'ajout de la catégorie');
+            addToast('Erreur lors de l\'ajout de la catégorie', 'error');
         }
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!window.confirm('Supprimer cette catégorie ?')) return;
         try {
             await api.delete(`/expenses/categories/${id}`);
             fetchData();
+            addToast('✅ Catégorie supprimée', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur: Impossible de supprimer une catégorie utilisée par des dépenses.');
+            addToast('Erreur: Impossible de supprimer une catégorie utilisée par des dépenses.', 'error');
         }
     };
 
@@ -126,10 +126,12 @@ const Expenses = () => {
         try {
             await api.put(`/expenses/categories/${id}`, { name: editingName });
             setEditingCategory(null);
+            setEditingName('');
             fetchData();
+            addToast('✅ Catégorie modifiée', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de la modification de la catégorie');
+            addToast('Erreur lors de la modification de la catégorie', 'error');
         }
     };
 
@@ -138,9 +140,10 @@ const Expenses = () => {
             try {
                 await api.delete(`/expenses/${id}`);
                 fetchData();
+                addToast('✅ Dépense supprimée', 'success');
             } catch (err) {
                 console.error(err);
-                alert('Erreur lors de la suppression');
+                addToast('Erreur lors de la suppression', 'error');
             }
         }
     };
@@ -180,8 +183,8 @@ const Expenses = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'start', flexWrap: 'wrap' }}>
-                <div className="card" style={{ padding: '0', flex: '1', minWidth: '400px', border: '1px solid #e2e8f0', borderRadius: '20px', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', marginBottom: '24px', alignItems: 'start' }}>
+                <div className="card" style={{ padding: '0', marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '20px', overflow: 'hidden' }}>
                     <div style={{ padding: '15px 24px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '250px' }}>
                             <Search size={18} color="#64748b" />
@@ -230,66 +233,64 @@ const Expenses = () => {
                             )}
                         </div>
                     </div>
-                    <div style={{ overflowX: 'auto', width: '100%' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                            <thead>
-                                <tr>
-                                    <th style={{ textAlign: 'left', padding: '12px 20px' }}>Date</th>
-                                    <th style={{ textAlign: 'left', padding: '12px 20px' }}>Catégorie</th>
-                                    <th style={{ textAlign: 'left', padding: '12px 20px' }}>Description</th>
-                                    <th style={{ textAlign: 'right', padding: '12px 20px' }}>Montant</th>
-                                    <th style={{ textAlign: 'right', padding: '12px 20px' }}>Actions</th>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr>
+                                <th style={{ textAlign: 'left', padding: '12px 20px' }}>Date</th>
+                                <th style={{ textAlign: 'left', padding: '12px 20px' }}>Catégorie</th>
+                                <th style={{ textAlign: 'left', padding: '12px 20px' }}>Description</th>
+                                <th style={{ textAlign: 'right', padding: '12px 20px' }}>Montant</th>
+                                <th style={{ textAlign: 'right', padding: '12px 20px' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredExpenses.map(exp => (
+                                <tr key={exp.id}>
+                                    <td style={{ padding: '12px 20px' }}>{format(new Date(exp.date), 'dd/MM/yy')}</td>
+                                    <td style={{ padding: '12px 20px' }}>
+                                        <span style={{
+                                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                            color: 'var(--primary)',
+                                            fontSize: '11px',
+                                            fontWeight: '700',
+                                            padding: '4px 10px',
+                                            borderRadius: '20px',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {exp.category}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '14px' }}>{exp.description || '-'}</td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: '700', color: 'var(--text-main)' }}>
+                                        {Number(exp.amount).toFixed(3).replace('.', ',')} TND
+                                    </td>
+                                    <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                                        <button
+                                            onClick={() => handleDelete(exp.id)}
+                                            className="btn btn-outline"
+                                            style={{ padding: '6px', color: '#ef4444' }}
+                                            title="Supprimer"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {filteredExpenses.map(exp => (
-                                    <tr key={exp.id}>
-                                        <td style={{ padding: '12px 20px' }}>{format(new Date(exp.date), 'dd/MM/yy')}</td>
-                                        <td style={{ padding: '12px 20px' }}>
-                                            <span style={{
-                                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                                color: 'var(--primary)',
-                                                fontSize: '11px',
-                                                fontWeight: '700',
-                                                padding: '4px 10px',
-                                                borderRadius: '20px',
-                                                textTransform: 'uppercase'
-                                            }}>
-                                                {exp.category}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '14px' }}>{exp.description || '-'}</td>
-                                        <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: '700', color: 'var(--text-main)' }}>
-                                            {Number(exp.amount).toFixed(3).replace('.', ',')} TND
-                                        </td>
-                                        <td style={{ padding: '12px 20px', textAlign: 'right' }}>
-                                            <button
-                                                onClick={() => handleDelete(exp.id)}
-                                                className="btn btn-outline"
-                                                style={{ padding: '6px', color: '#ef4444' }}
-                                                title="Supprimer"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredExpenses.length === 0 && !loading && (
-                                    <tr>
-                                        <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                <Filter size={32} opacity={0.3} />
-                                                <p>Aucune dépense trouvée.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                            {filteredExpenses.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                            <Filter size={32} opacity={0.3} />
+                                            <p>Aucune dépense trouvée.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '300px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Category Breakdown */}
                     <div className="card" style={{ padding: '20px' }}>
                         <h4 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>

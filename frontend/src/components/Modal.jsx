@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
+    const previousFocusRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            // Save current focus
+            previousFocusRef.current = document.activeElement;
+        } else if (previousFocusRef.current) {
+            // Restore focus after a short delay to ensure modal is gone
+            const elementToFocus = previousFocusRef.current;
+            setTimeout(() => {
+                if (elementToFocus && typeof elementToFocus.focus === 'function') {
+                    elementToFocus.focus();
+                } else {
+                    document.body.focus();
+                }
+            }, 100);
+            previousFocusRef.current = null;
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
@@ -16,12 +36,11 @@ const Modal = ({ isOpen, onClose, title, children }) => {
                 left: 0,
                 width: '100%',
                 height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.5)',
+                backgroundColor: 'rgba(0,0,0,0.6)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 1000,
-                backdropFilter: 'blur(4px)',
                 cursor: 'pointer'
             }}
         >

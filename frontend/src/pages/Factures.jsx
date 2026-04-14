@@ -19,8 +19,11 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
+import { fr } from 'date-fns/locale';
+import { useToast } from '../components/Toast';
 
 const Factures = () => {
+    const { addToast } = useToast();
     const [factures, setFactures] = useState([]);
     const [clients, setClients] = useState([]);
     const [shootings, setShootings] = useState([]);
@@ -67,7 +70,7 @@ const Factures = () => {
             setShootings(sRes.data);
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message), 'error');
         } finally {
             setLoading(false);
         }
@@ -142,8 +145,9 @@ const Factures = () => {
 
     const handleAddPayment = async (e) => {
         e.preventDefault();
-        if (!detailModal.data?.shooting_id && !detailModal.data?.id) {
-            return alert('Impossible d\'ajouter un paiement: facture non valide.');
+        if (detailModal.data?.status === 'paid') return;
+        if (!detailModal.data?.id) {
+            return addToast('Impossible d\'ajouter un paiement: facture non valide.', 'error');
         }
         try {
             await api.post('/payments', {
@@ -159,9 +163,10 @@ const Factures = () => {
             setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
             setPaymentForm({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
             fetchData();
+            addToast('✅ Paiement ajouté avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'ajout du paiement : ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de l\'ajout du paiement : ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -180,9 +185,10 @@ const Factures = () => {
                     note: 'Paiement rapide (un clic)'
                 });
                 fetchData();
+                addToast('✅ Facture marquée comme payée !', 'success');
             } catch (err) {
                 console.error(err);
-                alert('Erreur lors du paiement rapide');
+                addToast('Erreur lors du paiement rapide', 'error');
             }
         }
     };
@@ -190,13 +196,12 @@ const Factures = () => {
         if (!window.confirm('Supprimer ce paiement ?')) return;
         try {
             await api.delete(`/payments/${id}`);
-            const refreshed = await api.get(`/factures/${detailModal.data.id}`);
-            const payments = await loadPaymentsForFacture(refreshed.data.id, refreshed.data.shooting_id);
-            setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
+            handleOpenDetail(detailModal.data.id);
             fetchData();
+            addToast('✅ Paiement supprimé', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de la suppression du paiement : ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de la suppression du paiement : ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -206,8 +211,8 @@ const Factures = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.client_id) return alert('Veuillez choisir un client');
-        if (items.length === 0) return alert('Veuillez ajouter au moins une ligne');
+        if (!form.client_id) return addToast('Veuillez choisir un client', 'error');
+        if (items.length === 0) return addToast('Veuillez ajouter au moins une ligne', 'error');
 
         try {
             if (modal.data) {
@@ -218,12 +223,10 @@ const Factures = () => {
             fetchData();
             handleClose();
             // Prevent focus freeze in Electron
-            setTimeout(() => {
-                alert('✅ Facture enregistrée avec succès !');
-            }, 100);
+            addToast('✅ Facture enregistrée avec succès !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message));
+            addToast('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -245,7 +248,7 @@ const Factures = () => {
             link.click();
         } catch (err) {
             console.error(err);
-            alert('Erreur lors du téléchargement du PDF');
+            addToast('Erreur lors du téléchargement du PDF', 'error');
         }
     };
 

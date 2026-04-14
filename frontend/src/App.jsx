@@ -11,6 +11,7 @@ import Freelancers from './pages/Freelancers';
 import CompanySettings from './pages/CompanySettings';
 import LicenseModal from './components/LicenseModal';
 import axios from 'axios';
+import { ToastProvider } from './components/Toast';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -93,7 +94,7 @@ function App() {
     if (loading) return null;
 
     return (
-        <>
+        <ToastProvider>
             {!isAuthenticated && <LicenseModal onAuthenticated={() => setIsAuthenticated(true)} />}
             <Router>
                 <Routes>
@@ -109,7 +110,7 @@ function App() {
                     </Route>
                 </Routes>
             </Router>
-        </>
+        </ToastProvider>
     );
 }
 

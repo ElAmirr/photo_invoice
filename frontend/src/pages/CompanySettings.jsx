@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Save, Upload, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '../components/Toast';
 
 const CompanySettings = () => {
+    const { addToast } = useToast();
     const [form, setForm] = useState({
         name: '',
         address: '',
@@ -69,10 +71,10 @@ const CompanySettings = () => {
             const res = await api.put('/company', data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert('Paramètres enregistrés !');
+            addToast('✅ Paramètres enregistrés !', 'success');
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement');
+            addToast('Erreur lors de l\'enregistrement', 'error');
         } finally {
             setSaving(false);
         }
