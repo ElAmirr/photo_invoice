@@ -4,11 +4,11 @@ import {
     LayoutDashboard,
     Users,
     Camera,
-    FileText,
-    Quote,
-    UserSquare2,
-    Settings,
-    CircleDollarSign
+    File,
+    FileCheck,
+    UserRoundCog,
+    Building2,
+    HandCoins
 } from 'lucide-react';
 
 import logo from '../assets/logo.png';
@@ -17,11 +17,12 @@ const Sidebar = () => {
     const links = [
         { to: '/', icon: <LayoutDashboard size={20} />, label: 'Tableau de bord' },
         { to: '/shootings', icon: <Camera size={20} />, label: 'Shooting' },
-        { to: '/devis', icon: <Quote size={20} />, label: 'Devis' },
-        { to: '/factures', icon: <FileText size={20} />, label: 'Factures' },
-        { to: '/clients', icon: <Users size={20} />, label: 'Clients' },
-        { to: '/freelancers', icon: <UserSquare2 size={20} />, label: 'Freelancers' },
-        { to: '/settings', icon: <Settings size={20} />, label: 'Mon Studio' },
+        { to: '/devis', icon: <File size={20} />, label: 'Devis' },
+        { to: '/factures', icon: <FileCheck size={20} />, label: 'Factures' },
+        { to: '/expenses', icon: <HandCoins size={20} />, label: 'Mes Dépenses' },
+        { to: '/clients', icon: <Users size={20} />, label: 'Mes Clients' },
+        { to: '/freelancers', icon: <UserRoundCog size={20} />, label: 'Mon Equipe' },
+        { to: '/settings', icon: <Building2 size={20} />, label: 'Mon Studio' },
     ];
 
     return (

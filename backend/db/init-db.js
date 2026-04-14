@@ -123,6 +123,21 @@ function initDb(dbPath) {
             FOREIGN KEY (shooting_id) REFERENCES shootings(id),
             FOREIGN KEY (freelancer_id) REFERENCES freelancers(id)
         );
+
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            date TEXT NOT NULL,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS expense_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
     `);
 
     // --- MIGRATIONS ---

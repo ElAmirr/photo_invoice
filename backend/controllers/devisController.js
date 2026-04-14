@@ -35,13 +35,26 @@ async function generateDevisRef() {
 
 exports.getAll = async (req, res) => {
     try {
-        const [rows] = await pool.query(`
+        const { startDate, endDate, status } = req.query;
+        let query = `
       SELECT d.*, c.name AS client_name, f.id AS facture_id
       FROM devis d
       LEFT JOIN clients c ON d.client_id = c.id
       LEFT JOIN factures f ON f.devis_id = d.id
-      ORDER BY d.id DESC
-    `);
+      WHERE 1=1`;
+        let params = [];
+
+        if (startDate && endDate) {
+            query += " AND d.date BETWEEN ? AND ?";
+            params.push(startDate, endDate);
+        }
+        if (status) {
+            query += " AND d.status = ?";
+            params.push(status);
+        }
+
+        query += " ORDER BY d.id DESC";
+        const [rows] = await pool.query(query, params);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -179,6 +192,8 @@ exports.updateStatus = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+
 
 // Convert devis to facture
 exports.convertToFacture = async (req, res) => {

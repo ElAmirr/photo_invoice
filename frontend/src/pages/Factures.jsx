@@ -9,11 +9,16 @@ import {
     FileDown,
     Trash2,
     Camera,
-    Eye,
-    ChevronRight,
-    DollarSign
+    Wallet,
+    XCircle,
+    Clock,
+    CheckCircle,
+    Filter,
+    DollarSign,
+    FileCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
+import DatePicker from 'react-datepicker';
 
 const Factures = () => {
     const [factures, setFactures] = useState([]);
@@ -24,7 +29,6 @@ const Factures = () => {
     const [modal, setModal] = useState({ isOpen: false, data: null });
     const [detailModal, setDetailModal] = useState({ isOpen: false, data: null });
 
-    // Form
     const [form, setForm] = useState({
         client_id: '',
         date: format(new Date(), 'yyyy-MM-dd'),
@@ -37,10 +41,24 @@ const Factures = () => {
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0, total_price: 0 }]);
     const [paymentForm, setPaymentForm] = useState({ amount: '', payment_date: format(new Date(), 'yyyy-MM-dd'), method: 'cash', note: '' });
 
+    // Filters
+    const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'unpaid'
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
+
     const fetchData = async () => {
         try {
+            let facturesUrl = '/factures';
+            const params = new URLSearchParams();
+            if (filterStatus !== 'all') params.append('status', filterStatus);
+            if (filterStartDate && filterEndDate) {
+                params.append('startDate', filterStartDate);
+                params.append('endDate', filterEndDate);
+            }
+            if (params.toString()) facturesUrl += `?${params.toString()}`;
+
             const [fRes, cRes, sRes] = await Promise.all([
-                api.get('/factures'),
+                api.get(facturesUrl),
                 api.get('/clients'),
                 api.get('/shootings')
             ]);
@@ -57,7 +75,7 @@ const Factures = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [filterStatus, filterStartDate, filterEndDate]);
 
     // Sync client with shooting
     useEffect(() => {
@@ -147,6 +165,27 @@ const Factures = () => {
         }
     };
 
+    const handleQuickPay = async (facture) => {
+        const remaining = Number(facture.total_amount || 0) - Number(facture.total_paid || 0);
+        if (remaining <= 0) return;
+
+        if (window.confirm(`Marquer la facture ${facture.reference} comme payée (${remaining.toFixed(3)} TND) ?`)) {
+            try {
+                await api.post('/payments', {
+                    shooting_id: facture.shooting_id || null,
+                    facture_id: facture.id,
+                    amount: remaining,
+                    payment_date: format(new Date(), 'yyyy-MM-dd'),
+                    method: 'virement',
+                    note: 'Paiement rapide (un clic)'
+                });
+                fetchData();
+            } catch (err) {
+                console.error(err);
+                alert('Erreur lors du paiement rapide');
+            }
+        }
+    };
     const handleDeletePayment = async (id) => {
         if (!window.confirm('Supprimer ce paiement ?')) return;
         try {
@@ -213,17 +252,100 @@ const Factures = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Factures</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{factures.length} factures au total</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                        <FileCheck size={22} color="white" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mes Factures</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}><span style={{ fontWeight: '700', color: '#8b5cf6' }}>{factures.length}</span> factures au total</p>
+                    </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => handleOpen()}>
                     <Plus size={18} /> Nouvelle Facture
                 </button>
             </div>
+            {/* Filter Bar */}
+            <div className="card" style={{ marginBottom: '24px', padding: '15px 24px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '20px' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Statut</span>
+                        <select
+                            className="form-control"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            style={{
+                                padding: '8px 16px',
+                                width: 'auto',
+                                borderRadius: '12px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                backgroundColor: 'white',
+                                color: '#1e293b',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="all">Toutes les factures</option>
+                            <option value="paid">Payées uniquement</option>
+                            <option value="unpaid">Non Payées / Partiels</option>
+                        </select>
+                    </div>
 
-            <div className="card" style={{ padding: '0' }}>
+                    <div style={{ width: '1px', height: '20px', backgroundColor: '#e2e8f0' }}></div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
+                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '2px 8px', width: '300px' }}>
+                                <DatePicker
+                                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                                    onChange={(date) => setFilterStartDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                                    dateFormat="dd/MM/yy"
+                                    placeholderText="Début"
+                                    className="custom-datepicker"
+                                    style={{ border: 'none', padding: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b', outline: 'none', width: '80px' }}
+                                />
+                                <span style={{ color: '#94a3b8', margin: '0 4px', fontSize: '12px', fontWeight: '800' }}>→</span>
+                                <DatePicker
+                                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                                    onChange={(date) => setFilterEndDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                                    dateFormat="dd/MM/yy"
+                                    placeholderText="Fin"
+                                    className="custom-datepicker"
+                                    style={{ border: 'none', padding: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b', outline: 'none', width: '80px' }}
+                                />
+                            </div>
+                        </div>
+
+                        {(filterStatus !== 'all' || filterStartDate || filterEndDate) && (
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => {
+                                    setFilterStatus('all');
+                                    setFilterStartDate('');
+                                    setFilterEndDate('');
+                                }}
+                                style={{
+                                    padding: '8px 16px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    borderRadius: '12px',
+                                    color: '#ef4444',
+                                    borderColor: '#fee2e2',
+                                    backgroundColor: '#fef2f2'
+                                }}
+                            >
+                                Réinitialiser
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
                 <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Search size={20} color="var(--text-muted)" />
                     <input
@@ -239,43 +361,70 @@ const Factures = () => {
                             <th>Référence</th>
                             <th>Client</th>
                             <th>Date</th>
-                            <th style={{ textAlign: 'right' }}>Montant Total (TTC)</th>
+                            <th style={{ textAlign: 'center' }}>Statut</th>
+                            <th style={{ textAlign: 'right' }}>Montant TTC</th>
                             <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filtered.map(f => (
-                            <tr key={f.id}>
-                                <td>{f.reference}</td>
-                                <td>{f.client_name}</td>
-                                <td>{f.date ? format(new Date(f.date), 'dd/MM/yyyy') : '-'}</td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: '700' }}>{(f.total_amount || 0).toFixed(3).replace('.', ',')} TND</div>
-                                    <div style={{ fontSize: '11px', color: '#10b981' }}>Payé: {(f.total_paid || 0).toFixed(3).replace('.', ',')} TND</div>
-                                    {Number(f.total_amount || 0) - Number(f.total_paid || 0) > 0 && (
-                                        <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
-                                            Reste: {(Number(f.total_amount || 0) - Number(f.total_paid || 0)).toFixed(3).replace('.', ',')} TND
+                        {filtered.map(f => {
+                            const remaining = Number(f.total_amount || 0) - Number(f.total_paid || 0);
+                            const isPaid = remaining <= 0.01;
+                            const isPartial = !isPaid && Number(f.total_paid || 0) > 0;
+                            return (
+                                <tr key={f.id}>
+                                    <td style={{ fontWeight: '700', color: 'var(--primary)' }}>{f.reference}</td>
+                                    <td>{f.client_name}</td>
+                                    <td>{f.date ? format(new Date(f.date), 'dd/MM/yy') : '-'}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {isPaid ? (
+                                            <span className="badge badge-paid" style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>Payée</span>
+                                        ) : isPartial ? (
+                                            <span className="badge" style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>Partiel</span>
+                                        ) : (
+                                            <span className="badge badge-unpaid" style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>Non Payée</span>
+                                        )}
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ fontWeight: '800', color: '#1e293b' }}>{(f.total_amount || 0).toFixed(3).replace('.', ',')} TND</div>
+                                        {!isPaid && (
+                                            <>
+                                                <div style={{ fontSize: '11px', color: '#64748b' }}>Payé: {(f.total_paid || 0).toFixed(3).replace('.', ',')} TND</div>
+                                                <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700' }}>
+                                                    Reste: {remaining.toFixed(3).replace('.', ',')} TND
+                                                </div>
+                                            </>
+                                        )}
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            {remaining > 0 && (
+                                                <button
+                                                    onClick={() => handleQuickPay(f)}
+                                                    className="btn btn-outline"
+                                                    style={{ padding: '6px', color: '#10b981', backgroundColor: '#ecfdf5' }}
+                                                    title="Marquer comme payé (Rapide)"
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </button>
+                                            )}
+                                            <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
+                                                <FileDown size={16} />
+                                            </button>
+                                            <button onClick={() => handleOpenDetail(f.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Paiements">
+                                                <Wallet size={16} />
+                                            </button>
+                                            <button onClick={() => handleOpen(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
+                                                <Edit size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(f.id)} className="btn btn-outline" style={{ padding: '6px', color: '#ef4444' }} title="Supprimer">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
-                                    )}
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => handleOpenDetail(f.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
-                                            <Eye size={16} />
-                                        </button>
-                                        <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
-                                            <FileDown size={16} />
-                                        </button>
-                                        <button onClick={() => handleOpen(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(f.id)} className="btn btn-outline" style={{ padding: '6px', color: '#ef4444' }} title="Supprimer">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -290,9 +439,10 @@ const Factures = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Client</label>
                             <select
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: form.shooting_id ? '#f8fafc' : 'white', cursor: form.shooting_id ? 'not-allowed' : 'default' }}
+                                className="input"
                                 value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}
                                 required disabled={!!form.shooting_id}
+                                style={{ backgroundColor: form.shooting_id ? '#f8fafc' : 'white', cursor: form.shooting_id ? 'not-allowed' : 'default' }}
                             >
                                 <option value="">Sélectionner un client</option>
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -301,42 +451,86 @@ const Factures = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n°</label>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n° (optionnel)</label>
                             <input
                                 placeholder="ex: 12345"
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                className="input"
                                 value={form.bon_commande} onChange={e => setForm({ ...form, bon_commande: e.target.value })}
                             />
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
-                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="radio" checked={!form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: false })} />
-                                    <span>TVA 19%</span>
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="radio" checked={form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: true })} />
-                                    <span>Suspendu (0%)</span>
-                                </label>
+                        <div style={{ display: 'flex', gap: '24px', gridColumn: 'span 2', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
+                                <div style={{
+                                    display: 'flex',
+                                    backgroundColor: '#f1f5f9',
+                                    padding: '4px',
+                                    borderRadius: '12px',
+                                    gap: '4px',
+                                    width: 'fit-content',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    <div
+                                        onClick={() => setForm({ ...form, tva_suspended: false })}
+                                        style={{
+                                            padding: '8px 20px',
+                                            borderRadius: '10px',
+                                            fontSize: '13px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            backgroundColor: !form.tva_suspended ? 'white' : 'transparent',
+                                            color: !form.tva_suspended ? '#8b5cf6' : '#64748b',
+                                            boxShadow: !form.tva_suspended ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                            border: !form.tva_suspended ? '1px solid #e0e7ff' : '1px solid transparent'
+                                        }}
+                                    >
+                                        TVA 19%
+                                    </div>
+                                    <div
+                                        onClick={() => setForm({ ...form, tva_suspended: true })}
+                                        style={{
+                                            padding: '8px 20px',
+                                            borderRadius: '10px',
+                                            fontSize: '13px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            backgroundColor: form.tva_suspended ? 'white' : 'transparent',
+                                            color: form.tva_suspended ? '#8b5cf6' : '#64748b',
+                                            boxShadow: form.tva_suspended ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                            border: form.tva_suspended ? '1px solid #e0e7ff' : '1px solid transparent'
+                                        }}
+                                    >
+                                        Suspendu (0%)
+                                    </div>
+                                </div>
                             </div>
+
+                            {form.tva_suspended && (
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
+                                    <input
+                                        placeholder="ex: 2026-AS-001"
+                                        className="input"
+                                        style={{ height: '42px' }}
+                                        value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
+                                    />
+                                </div>
+                            )}
                         </div>
 
-                        {form.tva_suspended && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
-                                <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
-                                <input
-                                    placeholder="ex: 2026-AS-001"
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                    value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
-                                />
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date de facture</label>
-                            <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date de facturation</label>
+                            <DatePicker
+                                selected={form.date ? new Date(form.date) : null}
+                                onChange={(date) => setForm({ ...form, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                dateFormat="dd/MM/yy"
+                                className="input"
+                                wrapperClassName="full-width"
+                                placeholderText="Choisir une date"
+                            />
                         </div>
 
 
@@ -345,11 +539,11 @@ const Factures = () => {
                                 <Camera size={16} /> Lier à un shooting (optionnel)
                             </label>
                             <select
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                className="input"
                                 value={form.shooting_id} onChange={e => setForm({ ...form, shooting_id: e.target.value })}
                             >
                                 <option value="">Aucun shooting</option>
-                                {shootings.map(s => <option key={s.id} value={s.id}>{s.title} ({format(new Date(s.shooting_date), 'dd/MM/yyyy')})</option>)}
+                                {shootings.map(s => <option key={s.id} value={s.id}>{s.title} ({format(new Date(s.shooting_date), 'dd/MM/yy')})</option>)}
                             </select>
                         </div>
                     </div>
@@ -392,7 +586,7 @@ const Factures = () => {
                             <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Date & Réf</p>
                                 <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{detailModal.data.reference}</h4>
-                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{format(new Date(detailModal.data.date), 'dd MMMM yyyy')}</p>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{format(new Date(detailModal.data.date), 'dd/MM/yy')}</p>
                             </div>
                         </div>
 
@@ -423,7 +617,7 @@ const Factures = () => {
                                 <tbody>
                                     {(detailModal.data.payments || []).map(p => (
                                         <tr key={p.id}>
-                                            <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : '-'}</td>
+                                            <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yy') : '-'}</td>
                                             <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                             <td>{p.method}</td>
                                             <td>{p.note || '-'}</td>
@@ -450,14 +644,14 @@ const Factures = () => {
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Date</label>
-                                    <input
-                                        type="date"
-                                        style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }}
-                                        value={paymentForm.payment_date}
-                                        onChange={e => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                                        required
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px' }}>Date</label>
+                                    <DatePicker
+                                        selected={paymentForm.payment_date ? new Date(paymentForm.payment_date) : null}
+                                        onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                        dateFormat="dd/MM/yy"
+                                        className="input"
+                                        placeholderText="Date"
                                     />
                                 </div>
                                 <div>

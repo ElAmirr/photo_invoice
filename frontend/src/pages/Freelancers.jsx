@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
-import { Plus, Edit, Trash2, Search, Phone, Briefcase, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Phone, Briefcase, Wallet, UserCog } from 'lucide-react';
 
 const Freelancers = () => {
     const [freelancers, setFreelancers] = useState([]);
@@ -75,13 +75,19 @@ const Freelancers = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Freelancers</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{freelancers.length} freelancers enregistrés</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+
+                        <UserCog size={22} color="white" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mon Équipe</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}><span style={{ fontWeight: '700', color: '#8b5cf6' }}>{freelancers.length}</span> coequipers enregistrés</p>
+                    </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => handleOpen()}>
-                    <Plus size={18} /> Nouveau Freelancer
+                    <Plus size={18} /> Nouveau Coequiper
                 </button>
             </div>
 
@@ -123,8 +129,8 @@ const Freelancers = () => {
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => handleOpenDetail(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
-                                            <Eye size={16} />
+                                        <button onClick={() => handleOpenDetail(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Paiements">
+                                            <Wallet size={16} />
                                         </button>
                                         <button onClick={() => handleOpen(f)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
                                             <Edit size={16} />

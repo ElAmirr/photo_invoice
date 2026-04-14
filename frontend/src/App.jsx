@@ -6,6 +6,7 @@ import Clients from './pages/Clients';
 import Shootings from './pages/Shootings';
 import Devis from './pages/Devis';
 import Factures from './pages/Factures';
+import Expenses from './pages/Expenses';
 import Freelancers from './pages/Freelancers';
 import CompanySettings from './pages/CompanySettings';
 import LicenseModal from './components/LicenseModal';
@@ -102,6 +103,7 @@ function App() {
                         <Route path="shootings" element={<Shootings />} />
                         <Route path="devis" element={<Devis />} />
                         <Route path="factures" element={<Factures />} />
+                        <Route path="expenses" element={<Expenses />} />
                         <Route path="freelancers" element={<Freelancers />} />
                         <Route path="settings" element={<CompanySettings />} />
                     </Route>

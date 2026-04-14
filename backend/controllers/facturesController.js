@@ -42,13 +42,34 @@ async function generateFactureRef() {
 
 exports.getAll = async (req, res) => {
     try {
-        const [rows] = await pool.query(`
+        const { startDate, endDate, status } = req.query;
+        console.log('Factures Filter:', { startDate, endDate, status });
+        let query = `
       SELECT f.*, c.name AS client_name,
         (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id) AS total_paid
       FROM factures f
       LEFT JOIN clients c ON f.client_id = c.id
-      ORDER BY f.id DESC
-    `);
+      WHERE 1=1`;
+        let params = [];
+
+        console.log('Factures Filter:', { startDate, endDate, status });
+
+        if (startDate && endDate) {
+            query += " AND f.date BETWEEN ? AND ?";
+            params.push(startDate, endDate);
+        }
+
+        if (status === 'paid') {
+            query += " AND (COALESCE(LOWER(f.status), '') = 'paid' OR (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id) >= f.total_amount - 0.01)";
+        } else if (status === 'unpaid') {
+            query += " AND (COALESCE(LOWER(f.status), '') != 'paid') AND (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id) < f.total_amount - 0.01";
+        }
+
+        console.log('Executing Query:', query);
+        console.log('With Params:', params);
+
+        query += " ORDER BY f.id DESC";
+        const [rows] = await pool.query(query, params);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });

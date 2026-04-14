@@ -12,9 +12,12 @@ import {
     Eye,
     CheckCircle,
     XCircle,
-    Clock
+    Clock,
+    Filter,
+    File
 } from 'lucide-react';
 import { format } from 'date-fns';
+import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
 
 const Devis = () => {
@@ -28,6 +31,11 @@ const Devis = () => {
         devisId: null,
         form: { shooting_date: '', start_time: '', duration: '', location: '' }
     });
+
+    // Filters
+    const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'accepted', 'rejected'
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
 
     // Form
     const [form, setForm] = useState({
@@ -44,15 +52,23 @@ const Devis = () => {
 
     const fetchData = async () => {
         try {
+            let devisUrl = '/devis';
+            const params = new URLSearchParams();
+            if (filterStatus !== 'all') params.append('status', filterStatus);
+            if (filterStartDate && filterEndDate) {
+                params.append('startDate', filterStartDate);
+                params.append('endDate', filterEndDate);
+            }
+            if (params.toString()) devisUrl += `?${params.toString()}`;
+
             const [dRes, cRes] = await Promise.all([
-                api.get('/devis'),
+                api.get(devisUrl),
                 api.get('/clients')
             ]);
             setDevis(dRes.data);
             setClients(cRes.data);
         } catch (err) {
             console.error(err);
-            alert('Erreur lors de l\'enregistrement du devis: ' + (err.response?.data?.error || err.message));
         } finally {
             setLoading(false);
         }
@@ -60,7 +76,7 @@ const Devis = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [filterStatus, filterStartDate, filterEndDate]);
 
     const handleOpen = async (data = null) => {
         if (data) {
@@ -171,17 +187,102 @@ const Devis = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Devis</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{devis.length} devis enregistrés</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                        <File size={22} color="white" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mes Devis</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}><span style={{ fontWeight: '700', color: '#8b5cf6' }}>{devis.length}</span> devis enregistrés</p>
+                    </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => handleOpen()}>
                     <Plus size={18} /> Nouveau Devis
                 </button>
             </div>
 
-            <div className="card" style={{ padding: '0' }}>
+            {/* Filter Bar */}
+            <div className="card" style={{ marginBottom: '24px', padding: '15px 24px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '20px' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Statut</span>
+                        <select
+                            className="form-control"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            style={{
+                                padding: '8px 16px',
+                                width: 'auto',
+                                borderRadius: '12px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                backgroundColor: 'white',
+                                color: '#1e293b',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="all">Tous les devis</option>
+                            <option value="pending">En attente</option>
+                            <option value="accepted">Acceptés</option>
+                            <option value="rejected">Rejetés</option>
+                        </select>
+                    </div>
+
+                    <div style={{ width: '1px', height: '20px', backgroundColor: '#e2e8f0' }}></div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
+                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '2px 8px', width: '300px' }}>
+                                <DatePicker
+                                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                                    onChange={(date) => setFilterStartDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                                    dateFormat="dd/MM/yy"
+                                    placeholderText="Début"
+                                    className="custom-datepicker"
+                                    style={{ border: 'none', padding: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b', outline: 'none', width: '80px' }}
+                                />
+                                <span style={{ color: '#94a3b8', margin: '0 4px', fontSize: '12px', fontWeight: '800' }}>→</span>
+                                <DatePicker
+                                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                                    onChange={(date) => setFilterEndDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                                    dateFormat="dd/MM/yy"
+                                    placeholderText="Fin"
+                                    className="custom-datepicker"
+                                    style={{ border: 'none', padding: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b', outline: 'none', width: '80px' }}
+                                />
+                            </div>
+                        </div>
+
+                        {(filterStatus !== 'all' || filterStartDate || filterEndDate) && (
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => {
+                                    setFilterStatus('all');
+                                    setFilterStartDate('');
+                                    setFilterEndDate('');
+                                }}
+                                style={{
+                                    padding: '8px 16px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    borderRadius: '12px',
+                                    color: '#ef4444',
+                                    borderColor: '#fee2e2',
+                                    backgroundColor: '#fef2f2'
+                                }}
+                            >
+                                Réinitialiser
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
                 <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Search size={20} color="var(--text-muted)" />
                     <input
@@ -211,44 +312,53 @@ const Devis = () => {
                                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{d.title || '(Sans titre)'}</div>
                                 </td>
                                 <td>
-                                    <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yyyy') : '-'}</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yyyy') : '-'}</div>
+                                    <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yy') : '-'}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yy') : '-'}</div>
                                 </td>
                                 <td style={{ textAlign: 'right', fontWeight: '700' }}>{(d.total_amount || 0).toFixed(3).replace('.', ',')} TND</td>
-                                <td>
+                                <td style={{ textAlign: 'center' }}>
                                     <span className={`badge badge-${d.status}`}>
                                         {d.status === 'pending' ? 'En attente' : d.status === 'accepted' ? 'Accepté' : 'Rejeté'}
                                     </span>
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                        {!d.facture_id ? (
-                                            <button
-                                                onClick={() => convertToFacture(d.id, d.date)}
-                                                className="btn"
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    backgroundColor: '#10b981',
-                                                    color: 'white',
+                                        <div style={{ width: '100px', display: 'flex', justifyContent: 'center' }}>
+                                            {!d.facture_id ? (
+                                                <button
+                                                    onClick={() => convertToFacture(d.id, d.date)}
+                                                    className="btn btn-sm"
+                                                    style={{
+                                                        backgroundColor: '#fef3c7',
+                                                        color: '#92400e',
+                                                        width: '100%',
+                                                        gap: '4px'
+                                                    }}
+                                                    title="Convertir en facture"
+                                                >
+                                                    <RefreshCw size={14} /> <span>Convertir</span>
+                                                </button>
+                                            ) : (
+                                                <span style={{
+                                                    fontSize: '11px',
+                                                    color: '#10b981',
+                                                    fontWeight: '700',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    gap: '6px',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    border: 'none',
-                                                    borderRadius: '6px'
-                                                }}
-                                                title="Convertir en facture"
-                                            >
-                                                <RefreshCw size={14} /> <span>Convertir</span>
-                                            </button>
-                                        ) : (
-                                            <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#ecfdf5', padding: '4px 8px', borderRadius: '4px' }}>
-                                                <CheckCircle size={12} /> Converti
-                                            </span>
-                                        )}
+                                                    justifyContent: 'center',
+                                                    gap: '4px',
+                                                    backgroundColor: '#ecfdf5',
+                                                    width: '100%',
+                                                    height: '28px',
+                                                    borderRadius: '6px',
+                                                    border: '1px solid #d1fae5'
+                                                }}>
+                                                    <CheckCircle size={12} /> Converti
+                                                </span>
+                                            )}
+                                        </div>
                                         <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--border)', margin: '0 4px' }}></div>
-                                        <button onClick={() => downloadPdf(d.id, d.reference)} className="btn btn-outline" style={{ padding: '6px' }} title="Télécharger PDF">
+                                        <button onClick={() => downloadPdf(d.id, d.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
                                             <FileDown size={16} />
                                         </button>
                                         <button onClick={() => handleOpen(d)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
@@ -275,7 +385,7 @@ const Devis = () => {
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Client</label>
                             <select
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                className="input"
                                 value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} required
                             >
                                 <option value="">Sélectionner un client</option>
@@ -283,53 +393,95 @@ const Devis = () => {
                             </select>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n°</label>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Bon de commande n° (optionnel)</label>
                             <input
                                 placeholder="ex: 12345"
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                className="input"
                                 value={form.bon_commande} onChange={e => setForm({ ...form, bon_commande: e.target.value })}
                             />
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
-                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="radio" checked={!form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: false })} />
-                                    <span>TVA 19%</span>
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="radio" checked={form.tva_suspended} onChange={() => setForm({ ...form, tva_suspended: true })} />
-                                    <span>Suspendu (0%)</span>
-                                </label>
+                        <div style={{ display: 'flex', gap: '24px', gridColumn: 'span 2', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>Régime TVA</label>
+                                <div style={{
+                                    display: 'flex',
+                                    backgroundColor: '#f1f5f9',
+                                    padding: '4px',
+                                    borderRadius: '12px',
+                                    gap: '4px',
+                                    width: 'fit-content',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    <div
+                                        onClick={() => setForm({ ...form, tva_suspended: false })}
+                                        style={{
+                                            padding: '8px 20px',
+                                            borderRadius: '10px',
+                                            fontSize: '13px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            backgroundColor: !form.tva_suspended ? 'white' : 'transparent',
+                                            color: !form.tva_suspended ? '#8b5cf6' : '#64748b',
+                                            boxShadow: !form.tva_suspended ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                            border: !form.tva_suspended ? '1px solid #e0e7ff' : '1px solid transparent'
+                                        }}
+                                    >
+                                        TVA 19%
+                                    </div>
+                                    <div
+                                        onClick={() => setForm({ ...form, tva_suspended: true })}
+                                        style={{
+                                            padding: '8px 20px',
+                                            borderRadius: '10px',
+                                            fontSize: '13px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            backgroundColor: form.tva_suspended ? 'white' : 'transparent',
+                                            color: form.tva_suspended ? '#8b5cf6' : '#64748b',
+                                            boxShadow: form.tva_suspended ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                            border: form.tva_suspended ? '1px solid #e0e7ff' : '1px solid transparent'
+                                        }}
+                                    >
+                                        Suspendu (0%)
+                                    </div>
+                                </div>
                             </div>
+
+                            {form.tva_suspended && (
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
+                                    <input
+                                        placeholder="ex: 2026-AS-001"
+                                        className="input"
+                                        style={{ height: '42px' }}
+                                        value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
+                                    />
+                                </div>
+                            )}
                         </div>
 
-                        {form.tva_suspended && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
-                                <label style={{ fontSize: '14px', fontWeight: '600' }}>N° Attestation de suspension</label>
-                                <input
-                                    placeholder="ex: 2026-AS-001"
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                    value={form.suspension_number} onChange={e => setForm({ ...form, suspension_number: e.target.value })}
-                                />
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre / Nom du Projet (Interne)</label>
-                            <input
-                                placeholder="ex: Mariage Sarah & Amine"
-                                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du devis</label>
+                            <DatePicker
+                                selected={form.date ? new Date(form.date) : null}
+                                onChange={(date) => setForm({ ...form, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                dateFormat="dd/MM/yy"
+                                className="input"
+                                wrapperClassName="full-width"
                             />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du devis</label>
-                            <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Valide jusqu'au</label>
-                            <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })} required />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Valable jusqu'au</label>
+                            <DatePicker
+                                selected={form.valid_until ? new Date(form.valid_until) : null}
+                                onChange={(date) => setForm({ ...form, valid_until: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                dateFormat="dd/MM/yy"
+                                className="input"
+                                wrapperClassName="full-width"
+                            />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Status</label>
@@ -358,14 +510,13 @@ const Devis = () => {
                     <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px' }}>
                         Veuillez confirmer les informations de planification pour la création automatique du shooting.
                     </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du Shooting</label>
-                        <input
-                            type="date"
-                            style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                            value={convModal.form.shooting_date}
-                            onChange={e => setConvModal({ ...convModal, form: { ...convModal.form, shooting_date: e.target.value } })}
-                            required
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du shooting</label>
+                        <DatePicker
+                            selected={convModal.form.shooting_date ? new Date(convModal.form.shooting_date) : null}
+                            onChange={(date) => setConvModal({ ...convModal, form: { ...convModal.form, shooting_date: date ? format(date, 'yyyy-MM-dd') : '' } })}
+                            dateFormat="dd/MM/yy"
+                            className="input"
                         />
                     </div>
                     <div style={{ display: 'flex', gap: '16px' }}>
@@ -404,7 +555,7 @@ const Devis = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 };
 

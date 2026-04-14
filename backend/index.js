@@ -26,6 +26,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/freelancers', require('./routes/freelancers'));
 app.use('/api/devis', require('./routes/devis'));
 app.use('/api/factures', require('./routes/factures'));
+app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/pdf', require('./routes/pdf'));
 

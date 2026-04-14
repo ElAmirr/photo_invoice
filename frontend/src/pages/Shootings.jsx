@@ -28,8 +28,11 @@ import {
     isSameDay,
     addMonths,
     subMonths,
-    isToday
+    isToday,
+    isValid
 } from 'date-fns';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
 
 const Shootings = () => {
@@ -73,14 +76,14 @@ const Shootings = () => {
         fetchData();
     }, []);
 
-    const handleOpenMain = (data = null) => {
+    const handleOpenMain = (data = null, prefilledDate = null) => {
         if (data) {
             setForm({
                 ...data,
                 shooting_date: data.shooting_date ? format(new Date(data.shooting_date), 'yyyy-MM-dd') : ''
             });
         } else {
-            setForm({ client_id: '', title: '', shooting_date: '', location: '', total_price: 0, status: 'scheduled', start_time: '', duration: '' });
+            setForm({ client_id: '', title: '', shooting_date: prefilledDate || '', location: '', total_price: 0, status: 'scheduled', start_time: '', duration: '' });
         }
         setModal({ isOpen: true, data });
     };
@@ -176,113 +179,105 @@ const Shootings = () => {
         const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
         return (
-            <div className="calendar-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--secondary)', textTransform: 'capitalize' }}>
-                            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
-                        </h2>
-                        <div style={{ display: 'flex', gap: '5px' }}>
-                            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '5px' }}>
-                                <ChevronLeft size={18} />
-                            </button>
-                            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '5px' }}>
-                                <ChevronRight size={18} />
-                            </button>
-                            <button onClick={() => setCurrentMonth(new Date())} className="btn btn-outline" style={{ padding: '5px 12px', fontSize: '12px' }}>Aujourd'hui</button>
+            <div className="calendar-grid" style={{ height: 'calc(100vh - 270px)', minHeight: '0' }}>
+                {weekDays.map(day => (
+                    <div key={day} className="calendar-header-cell">{day}</div>
+                ))}
+                {calendarDays.map(day => {
+                    const dayShootings = shootings.filter(s => isSameDay(new Date(s.shooting_date), day));
+                    return (
+                        <div
+                            key={day.toString()}
+                            className={`calendar-day-cell ${!isSameMonth(day, monthStart) ? 'other-month' : ''} ${isToday(day) ? 'today' : ''}`}
+                            onClick={() => {
+                                if (dayShootings.length === 0) {
+                                    handleOpenMain(null, format(day, 'yyyy-MM-dd'));
+                                }
+                            }}
+                        >
+                            <span className="calendar-day-number">{format(day, 'd')}</span>
+                            {dayShootings.map(s => (
+                                <div
+                                    key={s.id}
+                                    className={`calendar-event ${s.status}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenDetail(s.id);
+                                    }}
+                                    title={s.title}
+                                >
+                                    {s.title}
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                </div>
-
-                <div className="calendar-grid">
-                    {weekDays.map(day => (
-                        <div key={day} className="calendar-header-cell">{day}</div>
-                    ))}
-                    {calendarDays.map(day => {
-                        const dayShootings = shootings.filter(s => isSameDay(new Date(s.shooting_date), day));
-                        return (
-                            <div
-                                key={day.toString()}
-                                className={`calendar-day-cell ${!isSameMonth(day, monthStart) ? 'other-month' : ''} ${isToday(day) ? 'today' : ''}`}
-                                onClick={() => {
-                                    if (dayShootings.length === 0) {
-                                        setForm({ ...form, shooting_date: format(day, 'yyyy-MM-dd') });
-                                        handleOpenMain();
-                                    }
-                                }}
-                            >
-                                <span className="calendar-day-number">{format(day, 'd')}</span>
-                                {dayShootings.map(s => (
-                                    <div
-                                        key={s.id}
-                                        className={`calendar-event ${s.status}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenDetail(s.id);
-                                        }}
-                                        title={s.title}
-                                    >
-                                        {s.title}
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })}
-                </div>
+                    );
+                })}
             </div>
         );
     };
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Shootings</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{shootings.length} événements prévus</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '4px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-                        <button
-                            onClick={() => setViewMode('calendar')}
-                            style={{
-                                padding: '6px 12px',
-                                border: 'none',
-                                borderRadius: '6px',
-                                background: viewMode === 'calendar' ? 'var(--primary-light)' : 'transparent',
-                                color: viewMode === 'calendar' ? 'var(--primary)' : 'var(--text-muted)',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '13px',
-                                fontWeight: '600'
-                            }}
-                        >
-                            <CalendarViewIcon size={16} /> Calendrier
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            style={{
-                                padding: '6px 12px',
-                                border: 'none',
-                                borderRadius: '6px',
-                                background: viewMode === 'list' ? 'var(--primary-light)' : 'transparent',
-                                color: viewMode === 'list' ? 'var(--primary)' : 'var(--text-muted)',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '13px',
-                                fontWeight: '600'
-                            }}
-                        >
-                            <LayoutList size={16} /> Liste
-                        </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+
+                        <CalendarIcon size={22} color="white" />
                     </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mes Shootings</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}><span style={{ fontWeight: '700', color: '#8b5cf6' }}>{shootings.length}</span> événements prévus</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        className={viewMode === 'calendar' ? 'btn btn-primary' : 'btn btn-outline'}
+                        onClick={() => setViewMode('calendar')}
+                        style={{ textDecoration: 'none', backgroundColor: viewMode === 'calendar' ? '' : 'white' }}
+                    >
+                        <CalendarViewIcon size={16} /> Calendrier
+                    </button>
+                    <button
+                        className={viewMode === 'list' ? 'btn btn-primary' : 'btn btn-outline'}
+                        onClick={() => setViewMode('list')}
+                        style={{ textDecoration: 'none', backgroundColor: viewMode === 'list' ? '' : 'white' }}
+                    >
+                        <LayoutList size={16} /> Liste
+                    </button>
                     <button className="btn btn-primary" onClick={() => handleOpenMain()}>
                         <Plus size={18} /> Nouveau Shooting
                     </button>
                 </div>
+            </div>
+
+            {/* Separate Filter Bar */}
+            <div className="card" style={{ marginBottom: '24px', padding: '13px 24px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '20px' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
+                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '0 8px', height: '38px' }}>
+                            <DatePicker
+                                selected={currentMonth}
+                                onChange={(date) => setCurrentMonth(date)}
+                                dateFormat="MMMM yyyy"
+                                showMonthYearPicker
+                                className="custom-datepicker"
+                                style={{ border: 'none', padding: '6px', fontSize: '13px', fontWeight: '700', color: '#1e293b', outline: 'none', width: '130px', textTransform: 'capitalize' }}
+                                locale={fr}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '6px', borderRadius: '10px', height: '38px', width: '38px' }}>
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="btn btn-outline" style={{ padding: '6px', borderRadius: '10px', height: '38px', width: '38px' }}>
+                                <ChevronRight size={18} />
+                            </button>
+                            <button onClick={() => setCurrentMonth(new Date())} className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '12px', fontWeight: '700', borderRadius: '10px', height: '38px' }}>Aujourd'hui</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {viewMode === 'calendar' ? (
@@ -318,7 +313,7 @@ const Shootings = () => {
                                     </td>
                                     <td>{s.client_name}</td>
                                     <td>
-                                        <div style={{ fontSize: '13px' }}>{s.shooting_date ? format(new Date(s.shooting_date), 'dd MMMM yyyy', { locale: fr }) : '-'}</div>
+                                        <div style={{ fontSize: '13px' }}>{s.shooting_date ? format(new Date(s.shooting_date), 'dd/MM/yy') : '-'}</div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.location}</div>
                                     </td>
                                     <td>
@@ -363,7 +358,7 @@ const Shootings = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '600' }}>Client</label>
                         <select
-                            style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                            className="input"
                             value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} required
                         >
                             <option value="">Sélectionner un client</option>
@@ -372,39 +367,46 @@ const Shootings = () => {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '600' }}>Titre</label>
-                        <input style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+                        <input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
                     </div>
                     <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date</label>
-                            <input type="date" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.shooting_date} onChange={e => setForm({ ...form, shooting_date: e.target.value })} required />
+                        <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du Shooting</label>
+                            <DatePicker
+                                selected={form.shooting_date ? new Date(form.shooting_date) : null}
+                                onChange={(date) => setForm({ ...form, shooting_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                dateFormat="dd/MM/yy"
+                                className="input"
+                                wrapperClassName="full-width"
+                                locale={fr}
+                            />
                         </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Heure (Optionnel)</label>
+                            <input type="text" placeholder="ex: 14:00" className="input" value={form.start_time || ''} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Durée (Optionnel)</label>
+                            <input type="number" placeholder="Heures" className="input" value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px' }}>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Prix Total (TND)</label>
-                            <input type="number" step="0.001" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.total_price} onChange={e => setForm({ ...form, total_price: e.target.value })} required />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Heure (ex: 14:00)</label>
-                            <input type="text" placeholder="10:30" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.start_time || ''} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+                            <input type="number" step="1" className="input" value={form.total_price} onChange={e => setForm({ ...form, total_price: e.target.value })} required />
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Durée (heures)</label>
-                            <input type="number" placeholder="2" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} />
+                            <label style={{ fontSize: '14px', fontWeight: '600' }}>Status</label>
+                            <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                <option value="scheduled">Planifié</option>
+                                <option value="completed">Terminé</option>
+                                <option value="cancelled">Annulé</option>
+                            </select>
                         </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '600' }}>Lieu</label>
-                        <input style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '14px', fontWeight: '600' }}>Status</label>
-                        <select style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                            <option value="scheduled">Planifié</option>
-                            <option value="completed">Terminé</option>
-                            <option value="cancelled">Annulé</option>
-                        </select>
+                        <input className="input" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', justifyContent: 'center' }}>
                         {modal.data ? 'Mettre à jour' : 'Créer le shooting'}
@@ -469,7 +471,7 @@ const Shootings = () => {
                                         <tbody>
                                             {detailModal.data.payments.map(p => (
                                                 <tr key={p.id}>
-                                                    <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : '-'}</td>
+                                                    <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yy') : '-'}</td>
                                                     <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                                     <td>{p.method}</td>
                                                     <td>
@@ -485,9 +487,15 @@ const Shootings = () => {
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Montant</label>
                                         <input type="number" step="0.001" style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={paymentForm.amount} onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} required />
                                     </div>
-                                    <div>
+                                    <div style={{ flex: 1 }}>
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Date</label>
-                                        <input type="date" style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border)' }} value={paymentForm.payment_date} onChange={e => setPaymentForm({ ...paymentForm, payment_date: e.target.value })} required />
+                                        <DatePicker
+                                            selected={paymentForm.payment_date ? new Date(paymentForm.payment_date) : null}
+                                            onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                            dateFormat="dd/MM/yy"
+                                            className="input"
+                                            wrapperClassName="datePicker"
+                                        />
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Méthode</label>

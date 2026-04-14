@@ -190,7 +190,6 @@ function buildHtml(type, data) {
       <div class="ref">${refLabel} ${doc.reference}</div>
       <div class="date">Date: ${formatDate(doc.date)}</div>
       ${isDevis ? `<div class="valid-until">Valide jusqu'au: ${formatDate(doc.valid_until)}</div>` : ''}
-      ${isDevis ? `<div class="status-badge">${statusLabel}</div>` : ''}
     </div>
   </div>
 

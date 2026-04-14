@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Building2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const CompanySettings = () => {
     const [form, setForm] = useState({
@@ -80,8 +81,19 @@ const CompanySettings = () => {
     if (loading) return <div>Chargement...</div>;
 
     return (
-        <div style={{ maxWidth: '800px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px' }}>Mon Studio</h1>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+
+                        <Building2 size={22} color="white" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mon Studio</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}>Informations et paramètres du studio</p>
+                    </div>
+                </div>
+            </div>
 
             <form className="card" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '50px', marginBottom: '20px' }}>
@@ -183,7 +195,7 @@ const CompanySettings = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Date d'expiration</span>
                                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#e11d48' }}>
-                                    {new Date(licenseInfo.expiresAt || licenseInfo.expires_at).toLocaleDateString()}
+                                    {format(new Date(licenseInfo.expiresAt || licenseInfo.expires_at), 'dd/MM/yy')}
                                 </span>
                             </div>
                         )}

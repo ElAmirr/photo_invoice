@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
-import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Phone, Mail, MapPin, Wallet, Users } from 'lucide-react';
 
 const Clients = () => {
     const [clients, setClients] = useState([]);
@@ -75,10 +75,16 @@ const Clients = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700' }}>Gestion des Clients</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{clients.length} clients enregistrés</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', padding: '20px 24px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', borderRadius: '20px', border: '1px solid #c7d2fe' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                        <Users size={22} color="white" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.1 }}>Mes Clients</h1>
+                        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}><span style={{ fontWeight: '700', color: '#8b5cf6' }}>{clients.length}</span> clients enregistrés</p>
+                    </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => handleOpen()}>
                     <Plus size={18} /> Nouveau Client
@@ -132,8 +138,8 @@ const Clients = () => {
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => handleOpenDetail(c)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
-                                            <Eye size={16} />
+                                        <button onClick={() => handleOpenDetail(c)} className="btn btn-outline" style={{ padding: '6px' }} title="Paiements">
+                                            <Wallet size={16} />
                                         </button>
                                         <button onClick={() => handleOpen(c)} className="btn btn-outline" style={{ padding: '6px' }} title="Modifier">
                                             <Edit size={16} />
@@ -222,7 +228,7 @@ const Clients = () => {
                                     {formatCurrency(detailModal.analytics.total_paid)}
                                 </div>
                                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                                    {detailModal.analytics.total_factures_amount > 0 
+                                    {detailModal.analytics.total_factures_amount > 0
                                         ? `${Math.round((detailModal.analytics.total_paid / detailModal.analytics.total_factures_amount) * 100)}% payé`
                                         : 'N/A'
                                     }

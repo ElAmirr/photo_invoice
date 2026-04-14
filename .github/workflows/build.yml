@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -31,7 +33,12 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build App
-        run: npm run build
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            npm run build -- --publish always
+          else
+            npm run build
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -74,7 +81,13 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build App
-        run: npm run build
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            npm run build -- --publish always
+          else
+            npm run build
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
