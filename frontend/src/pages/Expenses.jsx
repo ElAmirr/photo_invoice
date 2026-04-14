@@ -238,7 +238,6 @@ const Expenses = () => {
                             <tr>
                                 <th style={{ textAlign: 'left', padding: '12px 20px' }}>Date</th>
                                 <th style={{ textAlign: 'left', padding: '12px 20px' }}>Catégorie</th>
-                                <th style={{ textAlign: 'left', padding: '12px 20px' }}>Description</th>
                                 <th style={{ textAlign: 'right', padding: '12px 20px' }}>Montant</th>
                                 <th style={{ textAlign: 'right', padding: '12px 20px' }}>Actions</th>
                             </tr>
@@ -248,19 +247,22 @@ const Expenses = () => {
                                 <tr key={exp.id}>
                                     <td style={{ padding: '12px 20px' }}>{format(new Date(exp.date), 'dd/MM/yy')}</td>
                                     <td style={{ padding: '12px 20px' }}>
-                                        <span style={{
-                                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                            color: 'var(--primary)',
-                                            fontSize: '11px',
-                                            fontWeight: '700',
-                                            padding: '4px 10px',
-                                            borderRadius: '20px',
-                                            textTransform: 'uppercase'
-                                        }}>
+                                        <span
+                                            title={exp.description || 'Pas de description'}
+                                            style={{
+                                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                                color: 'var(--primary)',
+                                                fontSize: '11px',
+                                                fontWeight: '700',
+                                                padding: '4px 10px',
+                                                borderRadius: '20px',
+                                                textTransform: 'uppercase',
+                                                cursor: 'help'
+                                            }}
+                                        >
                                             {exp.category}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '14px' }}>{exp.description || '-'}</td>
                                     <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: '700', color: 'var(--text-main)' }}>
                                         {Number(exp.amount).toFixed(3).replace('.', ',')} TND
                                     </td>
@@ -278,7 +280,7 @@ const Expenses = () => {
                             ))}
                             {filteredExpenses.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                             <Filter size={32} opacity={0.3} />
                                             <p>Aucune dépense trouvée.</p>
