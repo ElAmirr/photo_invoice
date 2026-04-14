@@ -125,6 +125,10 @@ const Devis = () => {
             }
             fetchData();
             handleClose();
+            // Use setTimeout to prevent focus freeze in Electron
+            setTimeout(() => {
+                alert('✅ Devis enregistré avec succès !');
+            }, 100);
         } catch (err) {
             console.error(err);
             alert('Erreur lors de l\'enregistrement du devis: ' + (err.response?.data?.error || err.message));
@@ -155,9 +159,12 @@ const Devis = () => {
         e.preventDefault();
         try {
             await api.post(`/devis/${convModal.devisId}/convert`, convModal.form);
-            alert('✅ Shooting planifié et Facture générée avec succès !');
             setConvModal({ ...convModal, isOpen: false });
             fetchData();
+            // Use setTimeout to prevent focus trap in Electron after modal unmounts
+            setTimeout(() => {
+                alert('✅ Shooting planifié et Facture générée avec succès !');
+            }, 150);
         } catch (err) {
             console.error(err);
             alert('Erreur lors de la conversion: ' + (err.response?.data?.error || err.message));

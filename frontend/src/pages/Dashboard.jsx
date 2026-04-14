@@ -304,14 +304,14 @@ const Dashboard = () => {
                     subValue="Le chiffre d'affaire avec les particuliers"
                 />
                 <BigStat
-                    title={"Bénéfice \n Net TTC"}
+                    title={"Bénéfice Net TTC"}
                     value={formatAmount(stats.profit)}
                     icon={<Banknote />}
                     color="#6366f1"
-                    subValue="Le bénéfice net TTC apres la deduction des charges "
+                    subValue="Le bénéfice net après la déduction des charges"
                 />
                 <BigStat
-                    title={"Total des TVA \n à payer"}
+                    title={"Total des TVA à payer"}
                     value={formatAmount(stats.totalTax)}
                     icon={<Banknote />}
                     color="#8b5cf6"

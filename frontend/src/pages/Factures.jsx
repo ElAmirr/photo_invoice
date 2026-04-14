@@ -217,6 +217,10 @@ const Factures = () => {
             }
             fetchData();
             handleClose();
+            // Prevent focus freeze in Electron
+            setTimeout(() => {
+                alert('✅ Facture enregistrée avec succès !');
+            }, 100);
         } catch (err) {
             console.error(err);
             alert('Erreur lors de l\'enregistrement de la facture: ' + (err.response?.data?.error || err.message));
