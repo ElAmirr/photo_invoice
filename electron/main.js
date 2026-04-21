@@ -272,6 +272,20 @@ ipcMain.handle('get-app-info', () => {
     };
 });
 
+ipcMain.handle('manual-check-updates', async () => {
+    try {
+        const result = await autoUpdater.checkForUpdates();
+        return {
+            success: true,
+            version: result ? result.updateInfo.version : app.getVersion(),
+            updateAvailable: result ? result.updateInfo.version !== app.getVersion() : false
+        };
+    } catch (err) {
+        console.error('Manual Update Check Error:', err);
+        return { success: false, error: err.message };
+    }
+});
+
 ipcMain.handle('start-trial', async () => {
     try {
         const hwid = machineIdSync();

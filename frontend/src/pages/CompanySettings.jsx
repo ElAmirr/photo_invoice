@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Save, Upload, Building2 } from 'lucide-react';
+import { Save, Upload, Building2, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '../components/Toast';
 
@@ -19,6 +19,8 @@ const CompanySettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [licenseInfo, setLicenseInfo] = useState(null);
+    const [appInfo, setAppInfo] = useState({ version: '...', os: '...' });
+    const [updateStatus, setUpdateStatus] = useState({ checking: false, available: null, latestVersion: null });
 
     useEffect(() => {
         // Fetch company info
@@ -34,6 +36,7 @@ const CompanySettings = () => {
 
         // Fetch license info from Electron, then re-fetch after heartbeat completes
         if (window.electron) {
+            window.electron.getAppInfo().then(setAppInfo);
             window.electron.checkLicense().then(info => {
                 setLicenseInfo(info);
             });
@@ -45,6 +48,32 @@ const CompanySettings = () => {
             }, 5000);
         }
     }, []);
+
+    const handleCheckUpdate = async () => {
+        if (!window.electron) return;
+        setUpdateStatus(prev => ({ ...prev, checking: true }));
+        try {
+            const result = await window.electron.manualCheckUpdates();
+            if (result.success) {
+                setUpdateStatus({
+                    checking: false,
+                    available: result.updateAvailable,
+                    latestVersion: result.version
+                });
+                if (result.updateAvailable) {
+                    addToast(`Mise à jour disponible: v${result.version}`, 'info');
+                } else {
+                    addToast('Votre application est à jour.', 'success');
+                }
+            } else {
+                setUpdateStatus(prev => ({ ...prev, checking: false }));
+                addToast(`Erreur de mise à jour: ${result.error}`, 'error');
+            }
+        } catch (err) {
+            setUpdateStatus(prev => ({ ...prev, checking: false }));
+            addToast('Erreur lors de la vérification', 'error');
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -209,6 +238,32 @@ const CompanySettings = () => {
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>ID Machine (HWID)</span>
                             <span style={{ fontSize: '11px', color: '#64748b' }}>{licenseInfo?.hwid || 'Chargement...'}</span>
                         </div>
+                    </div>
+
+                    <div style={{ marginTop: '20px', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>Version de l'application</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#e2e8f0', borderRadius: '10px', fontSize: '11px', fontWeight: '600', color: '#475569' }}>v{appInfo.version}</span>
+                            </div>
+                            <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
+                                {updateStatus.available === true
+                                    ? `Nouvelle version disponible : v${updateStatus.latestVersion}`
+                                    : updateStatus.available === false
+                                        ? 'Votre application est à jour'
+                                        : 'Vérifiez si une nouvelle version est disponible'}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleCheckUpdate}
+                            disabled={updateStatus.checking}
+                            className={`btn ${updateStatus.available === true ? 'btn-primary' : 'btn-outline'}`}
+                            style={{ padding: '8px 16px', fontSize: '12px', height: 'auto' }}
+                        >
+                            <RefreshCw size={14} className={updateStatus.checking ? 'spin' : ''} />
+                            {updateStatus.checking ? 'Vérification...' : updateStatus.available === true ? 'Mettre à jour' : 'Vérifier'}
+                        </button>
                     </div>
                 </div>
 
