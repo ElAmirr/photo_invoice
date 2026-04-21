@@ -122,14 +122,18 @@ function createWindow() {
     });
 }
 function checkUpdates() {
+    // Add logging for diagnostics
+    autoUpdater.logger = console;
+    autoUpdater.logger.info('App checking for updates...');
+
     autoUpdater.checkForUpdatesAndNotify();
 
-    // Check for updates every 15 minutes
-    setInterval(() => {
-        autoUpdater.checkForUpdatesAndNotify();
-    }, 15 * 60 * 1000);
+    autoUpdater.on('error', (err) => {
+        console.error('AutoUpdater Error:', err);
+    });
 
     autoUpdater.on('update-available', () => {
+        console.log('Update available!');
         dialog.showMessageBox({
             type: 'info',
             title: 'Update Available',
@@ -138,6 +142,7 @@ function checkUpdates() {
     });
 
     autoUpdater.on('update-downloaded', () => {
+        console.log('Update downloaded and ready to install.');
         dialog.showMessageBox({
             type: 'question',
             buttons: ['Restart', 'Later'],

@@ -1,6 +1,6 @@
 {
     "name": "shootix",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "Shootix - Studio Management System",
     "main": "electron/main.js",
     "scripts": {
