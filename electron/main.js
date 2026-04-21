@@ -273,6 +273,14 @@ ipcMain.handle('get-app-info', () => {
 });
 
 ipcMain.handle('manual-check-updates', async () => {
+    if (isDev) {
+        return {
+            success: true,
+            updateAvailable: false,
+            version: app.getVersion(),
+            releaseNotes: "Update check skipped in development mode."
+        };
+    }
     try {
         const result = await autoUpdater.checkForUpdates();
         return {
@@ -283,7 +291,12 @@ ipcMain.handle('manual-check-updates', async () => {
         };
     } catch (err) {
         console.error('Manual Update Check Error:', err);
-        return { success: false, error: err.message };
+        // Provide more user-friendly error messages
+        let errorMessage = err.message;
+        if (errorMessage.includes('404')) errorMessage = "Aucune version trouvée sur le serveur (404). Attendez que le build soit terminé.";
+        if (errorMessage.includes('ECONNREFUSED')) errorMessage = "Impossible de se connecter au serveur de mise à jour.";
+
+        return { success: false, error: errorMessage };
     }
 });
 
