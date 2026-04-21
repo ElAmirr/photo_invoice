@@ -278,11 +278,30 @@ ipcMain.handle('manual-check-updates', async () => {
         return {
             success: true,
             version: result ? result.updateInfo.version : app.getVersion(),
-            updateAvailable: result ? result.updateInfo.version !== app.getVersion() : false
+            updateAvailable: result ? result.updateInfo.version !== app.getVersion() : false,
+            releaseNotes: result ? result.updateInfo.releaseNotes : null
         };
     } catch (err) {
         console.error('Manual Update Check Error:', err);
         return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('quit-and-install', () => {
+    autoUpdater.quitAndInstall();
+    return true;
+});
+
+// Send progress to windows
+autoUpdater.on('download-progress', (progressObj) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('update-progress', progressObj.percent);
+    }
+});
+
+autoUpdater.on('update-downloaded', () => {
+    if (mainWindow) {
+        mainWindow.webContents.send('update-ready');
     }
 });
 
