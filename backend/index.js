@@ -29,6 +29,7 @@ app.use('/api/factures', require('./routes/factures'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/pdf', require('./routes/pdf'));
+app.use('/api/communications', require('./routes/comms'));
 
 const PORT = 5055;
 app.listen(PORT, '127.0.0.1', () => {

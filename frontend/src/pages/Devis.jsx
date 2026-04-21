@@ -14,7 +14,9 @@ import {
     XCircle,
     Clock,
     Filter,
-    File
+    Filter,
+    File,
+    Mail
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
@@ -188,6 +190,42 @@ const Devis = () => {
         } catch (err) {
             console.error(err);
             addToast('Erreur lors du téléchargement du PDF', 'error');
+        }
+    };
+
+    const handleSendEmail = async (d) => {
+        try {
+            // First get the PDF as a blob then convert to base64 for attachment
+            const pdfRes = await api.get(`/pdf/devis/${d.id}`, { responseType: 'blob' });
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfRes.data);
+            reader.onloadend = async () => {
+                const base64data = reader.result.split(',')[1];
+
+                const res = await api.post('/communications/send-email', {
+                    type: 'email_devis',
+                    recipientId: d.client_id,
+                    contextData: {
+                        client_name: d.client_name,
+                        reference: d.reference,
+                        studio_name: 'Mon Studio Photo' // This should ideally be from a context or global state
+                    },
+                    attachments: [
+                        {
+                            filename: `devis-${d.reference}.pdf`,
+                            content: base64data,
+                            encoding: 'base64'
+                        }
+                    ]
+                });
+
+                if (res.data.success) {
+                    addToast('Email envoyé avec succès !', 'success');
+                }
+            };
+        } catch (err) {
+            console.error(err);
+            addToast('Erreur lors de l\'envoi de l\'email: ' + (err.response?.data?.error || err.message), 'error');
         }
     };
 
@@ -370,6 +408,9 @@ const Devis = () => {
                                             )}
                                         </div>
                                         <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--border)', margin: '0 4px' }}></div>
+                                        <button onClick={() => handleSendEmail(d)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6' }} title="Envoyer par Email">
+                                            <Mail size={16} />
+                                        </button>
                                         <button onClick={() => downloadPdf(d.id, d.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
                                             <FileDown size={16} />
                                         </button>
