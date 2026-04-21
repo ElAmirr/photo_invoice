@@ -14,7 +14,6 @@ import {
     XCircle,
     Clock,
     Filter,
-    Filter,
     File,
     Mail
 } from 'lucide-react';
