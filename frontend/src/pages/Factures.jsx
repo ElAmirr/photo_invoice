@@ -152,14 +152,21 @@ const Factures = () => {
             return addToast('Impossible d\'ajouter un paiement: facture non valide.', 'error');
         }
         try {
-            await api.post('/payments', {
+            const rawAmount = Number(paymentForm.amount);
+            const roundedAmount = Math.round(rawAmount * 1000) / 1000;
+
+            const payload = {
                 shooting_id: detailModal.data.shooting_id || null,
                 facture_id: detailModal.data.id || null,
-                amount: Number(paymentForm.amount),
+                amount: roundedAmount,
                 payment_date: paymentForm.payment_date,
                 method: paymentForm.method,
                 note: paymentForm.note
-            });
+            };
+
+            console.log('Factures: Adding manual payment:', payload);
+            await api.post('/payments', payload);
+
             const refreshed = await api.get(`/factures/${detailModal.data.id}`);
             const payments = await loadPaymentsForFacture(refreshed.data.id, refreshed.data.shooting_id);
             setDetailModal({ isOpen: true, data: { ...refreshed.data, payments } });
@@ -167,31 +174,39 @@ const Factures = () => {
             fetchData();
             addToast('Paiement ajouté avec succès !', 'success');
         } catch (err) {
-            console.error(err);
-            addToast('Erreur lors de l\'ajout du paiement : ' + (err.response?.data?.error || err.message), 'error');
+            console.error('Add Payment Error Detail:', err);
+            const errorMsg = err.response?.data?.error || err.message;
+            addToast('Erreur lors de l\'ajout du paiement : ' + errorMsg, 'error');
         }
     };
 
     const handleQuickPay = async (facture) => {
-        const remaining = Number(facture.total_amount || 0) - Number(facture.total_paid || 0);
+        const remainingRaw = Number(facture.total_amount || 0) - Number(facture.total_paid || 0);
+        // Round to 3 decimal places to avoid floating point issues
+        const remaining = Math.round(remainingRaw * 1000) / 1000;
+
         if (remaining <= 0) return;
 
         const ok = await confirm(`Marquer la facture ${facture.reference} comme payée (${remaining.toFixed(3)} TND) ?`);
         if (ok) {
             try {
-                await api.post('/payments', {
+                const payload = {
                     shooting_id: facture.shooting_id || null,
                     facture_id: facture.id,
                     amount: remaining,
                     payment_date: format(new Date(), 'yyyy-MM-dd'),
                     method: 'virement',
                     note: 'Paiement rapide (un clic)'
-                });
+                };
+                console.log('Sending Quick Pay payload:', payload);
+                const res = await api.post('/payments', payload);
+                console.log('Quick Pay response:', res.data);
                 fetchData();
                 addToast('Facture marquée comme payée !', 'success');
             } catch (err) {
-                console.error(err);
-                addToast('Erreur lors du paiement rapide', 'error');
+                console.error('Quick Pay Error Detail:', err);
+                const errorMsg = err.response?.data?.error || err.message;
+                addToast(`Erreur lors du paiement rapide : ${errorMsg}`, 'error');
             }
         }
     };
