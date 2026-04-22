@@ -479,9 +479,12 @@ const Factures = () => {
                                                     <CheckCircle size={16} />
                                                 </button>
                                             )}
-                                            <button onClick={() => handleSendEmail(f)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6' }} title="Envoyer par Email">
-                                                <Mail size={16} />
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '2px 4px', border: '1px solid #e2e8f0', marginLeft: '4px' }}>
+                                                <Share2 size={12} color="#64748b" style={{ margin: '0 4px' }} />
+                                                <button onClick={() => handleSendEmail(f)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6', border: 'none', background: 'transparent' }} title="Envoyer par Email">
+                                                    <Mail size={16} />
+                                                </button>
+                                            </div>
                                             <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
                                                 <FileDown size={16} />
                                             </button>
