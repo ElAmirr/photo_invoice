@@ -15,7 +15,8 @@ import {
     Clock,
     Filter,
     File,
-    Mail
+    Mail,
+    Share2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
@@ -407,9 +408,12 @@ const Devis = () => {
                                             )}
                                         </div>
                                         <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--border)', margin: '0 4px' }}></div>
-                                        <button onClick={() => handleSendEmail(d)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6' }} title="Envoyer par Email">
-                                            <Mail size={16} />
-                                        </button>
+                                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '2px 4px', border: '1px solid #e2e8f0' }}>
+                                            <Share2 size={12} color="#64748b" style={{ margin: '0 4px' }} />
+                                            <button onClick={() => handleSendEmail(d)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6', border: 'none', background: 'transparent' }} title="Envoyer par Email">
+                                                <Mail size={16} />
+                                            </button>
+                                        </div>
                                         <button onClick={() => downloadPdf(d.id, d.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
                                             <FileDown size={16} />
                                         </button>

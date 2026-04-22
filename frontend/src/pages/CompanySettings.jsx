@@ -101,7 +101,11 @@ const CompanySettings = () => {
                 if (result.updateAvailable) {
                     addToast(`Mise à jour disponible: v${result.version}`, 'info');
                 } else {
-                    addToast('Votre application est à jour.', 'success');
+                    if (result.releaseNotes === "Update check skipped in development mode.") {
+                        addToast('Vérification ignorée en mode développement (nécessite une version installée).', 'info');
+                    } else {
+                        addToast('Votre application est à jour.', 'success');
+                    }
                 }
             } else {
                 setUpdateStatus(prev => ({ ...prev, checking: false }));

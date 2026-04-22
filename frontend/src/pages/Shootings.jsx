@@ -16,7 +16,8 @@ import {
     Users as UserSquare2,
     LayoutList,
     Calendar as CalendarViewIcon,
-    MessageSquare
+    MessageSquare,
+    Share2
 } from 'lucide-react';
 import {
     format,
@@ -396,9 +397,12 @@ const Shootings = () => {
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <button onClick={() => handleWhatsAppReminder(s)} className="btn btn-outline" style={{ padding: '6px', color: '#25D366' }} title="Rappel WhatsApp">
-                                                <MessageSquare size={16} />
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '2px 4px', border: '1px solid #e2e8f0' }}>
+                                                <Share2 size={12} color="#64748b" style={{ margin: '0 4px' }} />
+                                                <button onClick={() => handleWhatsAppReminder(s)} className="btn btn-outline" style={{ padding: '6px', color: '#25D366', border: 'none', background: 'transparent' }} title="Rappel WhatsApp">
+                                                    <MessageSquare size={16} />
+                                                </button>
+                                            </div>
                                             <button onClick={() => handleOpenDetail(s.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
                                                 <ChevronRight size={16} />
                                             </button>

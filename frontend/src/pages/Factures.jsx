@@ -16,7 +16,8 @@ import {
     Filter,
     DollarSign,
     FileCheck,
-    Mail
+    Mail,
+    Share2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
