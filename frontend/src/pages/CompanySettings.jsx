@@ -78,7 +78,9 @@ const CompanySettings = () => {
                     latestVersion: result.version,
                     releaseNotes: result.releaseNotes,
                     progress: 0,
-                    ready: false
+                    ready: false,
+                    error: result.success ? null : result.error,
+                    url: result.url || null
                 });
                 if (result.updateAvailable) {
                     addToast(`Mise à jour disponible: v${result.version}`, 'info');

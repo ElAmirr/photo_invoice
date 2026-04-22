@@ -274,7 +274,9 @@ ipcMain.handle('get-app-info', () => {
 
 ipcMain.handle('manual-check-updates', async () => {
     try {
+        console.log('Starting manual update check...');
         const result = await autoUpdater.checkForUpdates();
+        console.log('Update check result version info:', result?.updateInfo?.version);
         return {
             success: true,
             version: result ? result.updateInfo.version : app.getVersion(),
@@ -282,8 +284,13 @@ ipcMain.handle('manual-check-updates', async () => {
             releaseNotes: result ? result.updateInfo.releaseNotes : null
         };
     } catch (err) {
-        console.error('Manual Update Check Error:', err);
-        return { success: false, error: err.message };
+        console.error('Manual Update Check Error Detail:', err);
+        return {
+            success: false,
+            error: err.message,
+            stack: err.stack,
+            url: err.url || 'N/A'
+        };
     }
 });
 
