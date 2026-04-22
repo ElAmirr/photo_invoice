@@ -15,9 +15,7 @@ import {
     UserPlus,
     Users as UserSquare2,
     LayoutList,
-    Calendar as CalendarViewIcon,
-    MessageSquare,
-    Share2
+    Calendar as CalendarViewIcon
 } from 'lucide-react';
 import {
     format,
@@ -131,40 +129,6 @@ const Shootings = () => {
                 console.error(err);
                 addToast('Erreur lors de la suppression', 'error');
             }
-        }
-    };
-
-    const handleWhatsAppReminder = async (s) => {
-        try {
-            // Get templates to find the whatsapp one
-            const res = await api.get('/communications/settings');
-            const template = res.data.templates.find(t => t.type === 'whatsapp_shooting');
-
-            if (!template) return addToast('Modèle WhatsApp non trouvé', 'error');
-
-            let message = template.body
-                .replace('{{client_name}}', s.client_name)
-                .replace('{{reference}}', `#${s.id}`)
-                .replace('{{date}}', format(new Date(s.shooting_date), 'dd/MM/yy'))
-                .replace('{{studio_name}}', 'Mon Studio Photo');
-
-            const phone = s.client_phone?.replace(/\s+/g, '');
-            if (!phone) return addToast('Numéro de téléphone du client manquant', 'error');
-
-            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-
-            // Log this communication
-            await api.post('/communications/send-email', {
-                type: 'whatsapp_shooting',
-                recipientId: s.client_id,
-                contextData: { reference: s.id },
-                onlyLog: true
-            });
-
-        } catch (err) {
-            console.error(err);
-            addToast('Erreur WhatsApp', 'error');
         }
     };
 
@@ -397,12 +361,6 @@ const Shootings = () => {
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '2px 4px', border: '1px solid #e2e8f0' }}>
-                                                <Share2 size={12} color="#64748b" style={{ margin: '0 4px' }} />
-                                                <button onClick={() => handleWhatsAppReminder(s)} className="btn btn-outline" style={{ padding: '6px', color: '#25D366', border: 'none', background: 'transparent' }} title="Rappel WhatsApp">
-                                                    <MessageSquare size={16} />
-                                                </button>
-                                            </div>
                                             <button onClick={() => handleOpenDetail(s.id)} className="btn btn-outline" style={{ padding: '6px' }} title="Détails">
                                                 <ChevronRight size={16} />
                                             </button>

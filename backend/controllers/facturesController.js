@@ -45,7 +45,7 @@ exports.getAll = async (req, res) => {
         const { startDate, endDate, status } = req.query;
         console.log('Factures Filter:', { startDate, endDate, status });
         let query = `
-      SELECT f.*, c.name AS client_name, c.email AS client_email, c.phone AS client_phone,
+      SELECT f.*, c.name AS client_name,
         (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE shooting_id = f.shooting_id OR facture_id = f.id) AS total_paid
       FROM factures f
       LEFT JOIN clients c ON f.client_id = c.id

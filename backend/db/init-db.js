@@ -138,38 +138,6 @@ function initDb(dbPath) {
             name TEXT NOT NULL UNIQUE,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
-
-        CREATE TABLE IF NOT EXISTS comms_settings_smtp (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            host TEXT,
-            port INTEGER,
-            user TEXT,
-            pass TEXT,
-            secure INTEGER DEFAULT 0,
-            from_name TEXT,
-            from_email TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS comms_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT UNIQUE NOT NULL, -- email_devis, email_facture, whatsapp_reminder
-            subject TEXT,
-            body TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS comms_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER,
-            type TEXT, -- email, whatsapp
-            recipient TEXT,
-            subject TEXT,
-            body TEXT,
-            status TEXT DEFAULT 'pending', -- pending, sent, failed
-            error_message TEXT,
-            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients(id)
-        );
     `);
 
     // --- MIGRATIONS ---
@@ -251,26 +219,6 @@ function initDb(dbPath) {
     if (!facturesTva.some(col => col.name === 'suspension_number')) {
         try { db.exec('ALTER TABLE factures ADD COLUMN suspension_number TEXT;'); } catch (e) { }
         console.log('DB migration: added tva_suspended columns to devis and factures');
-    }
-
-    // 9. Initialize default templates if not exist
-    const templatesCount = db.prepare("SELECT count(*) as count FROM comms_templates").get();
-    if (templatesCount.count === 0) {
-        db.prepare("INSERT INTO comms_templates (type, subject, body) VALUES (?, ?, ?)").run(
-            'email_devis',
-            'Votre Devis de Shooting - {{studio_name}}',
-            'Bonjour {{client_name}},\n\nVeuillez trouver ci-joint votre devis n°{{reference}}.\n\nCordialement,\n{{studio_name}}'
-        );
-        db.prepare("INSERT INTO comms_templates (type, subject, body) VALUES (?, ?, ?)").run(
-            'email_facture',
-            'Votre Facture - {{studio_name}}',
-            'Bonjour {{client_name}},\n\nMerci pour votre confiance. Veuillez trouver ci-joint votre facture n°{{reference}}.\n\nCordialement,\n{{studio_name}}'
-        );
-        db.prepare("INSERT INTO comms_templates (type, body) VALUES (?, ?)").run(
-            'whatsapp_shooting',
-            'Bonjour {{client_name}}, petit rappel pour notre séance n°{{reference}} le {{date}}. Hâte de vous retrouver !'
-        );
-        console.log('DB initialization: seeded default communication templates');
     }
 
     console.log('Successfully initialized database schema.');

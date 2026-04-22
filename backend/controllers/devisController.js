@@ -37,7 +37,7 @@ exports.getAll = async (req, res) => {
     try {
         const { startDate, endDate, status } = req.query;
         let query = `
-      SELECT d.*, c.name AS client_name, c.email AS client_email, c.phone AS client_phone, f.id AS facture_id
+      SELECT d.*, c.name AS client_name, f.id AS facture_id
       FROM devis d
       LEFT JOIN clients c ON d.client_id = c.id
       LEFT JOIN factures f ON f.devis_id = d.id

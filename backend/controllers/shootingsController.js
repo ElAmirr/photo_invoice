@@ -3,7 +3,7 @@ const pool = require('../db/connection');
 exports.getAll = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-      SELECT s.*, c.name AS client_name, c.phone AS client_phone, c.email AS client_email,
+      SELECT s.*, c.name AS client_name,
         COALESCE(SUM(p.amount),0) AS total_paid
       FROM shootings s
       LEFT JOIN clients c ON s.client_id = c.id
@@ -20,7 +20,7 @@ exports.getAll = async (req, res) => {
 exports.getOne = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-      SELECT s.*, c.name AS client_name, c.phone AS client_phone, c.email AS client_email,
+      SELECT s.*, c.name AS client_name,
         COALESCE(SUM(p.amount),0) AS total_paid
       FROM shootings s
       LEFT JOIN clients c ON s.client_id = c.id

@@ -15,9 +15,7 @@ import {
     CheckCircle,
     Filter,
     DollarSign,
-    FileCheck,
-    Mail,
-    Share2
+    FileCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
@@ -280,42 +278,6 @@ const Factures = () => {
         }
     };
 
-    const handleSendEmail = async (f) => {
-        try {
-            // First get the PDF as a blob then convert to base64 for attachment
-            const pdfRes = await api.get(`/pdf/factures/${f.id}`, { responseType: 'blob' });
-            const reader = new FileReader();
-            reader.readAsDataURL(pdfRes.data);
-            reader.onloadend = async () => {
-                const base64data = reader.result.split(',')[1];
-
-                const res = await api.post('/communications/send-email', {
-                    type: 'email_facture',
-                    recipientId: f.client_id,
-                    contextData: {
-                        client_name: f.client_name,
-                        reference: f.reference,
-                        studio_name: 'Mon Studio Photo'
-                    },
-                    attachments: [
-                        {
-                            filename: `facture-${f.reference}.pdf`,
-                            content: base64data,
-                            encoding: 'base64'
-                        }
-                    ]
-                });
-
-                if (res.data.success) {
-                    addToast('Email envoyé avec succès !', 'success');
-                }
-            };
-        } catch (err) {
-            console.error(err);
-            addToast('Erreur lors de l\'envoi de l\'email: ' + (err.response?.data?.error || err.message), 'error');
-        }
-    };
-
     const filtered = factures.filter(f =>
         f.reference.toLowerCase().includes(search.toLowerCase()) ||
         f.client_name?.toLowerCase().includes(search.toLowerCase())
@@ -479,12 +441,6 @@ const Factures = () => {
                                                     <CheckCircle size={16} />
                                                 </button>
                                             )}
-                                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '2px 4px', border: '1px solid #e2e8f0', marginLeft: '4px' }}>
-                                                <Share2 size={12} color="#64748b" style={{ margin: '0 4px' }} />
-                                                <button onClick={() => handleSendEmail(f)} className="btn btn-outline" style={{ padding: '6px', color: '#8b5cf6', border: 'none', background: 'transparent' }} title="Envoyer par Email">
-                                                    <Mail size={16} />
-                                                </button>
-                                            </div>
                                             <button onClick={() => downloadPdf(f.id, f.reference)} className="btn btn-outline" style={{ padding: '6px', color: '#10b981' }} title="Télécharger PDF">
                                                 <FileDown size={16} />
                                             </button>
