@@ -57,8 +57,11 @@ jobs:
           path: |
             dist-electron/*.dmg
             dist-electron/*.zip
+            dist-electron/*.yml
             dist-electron/**/*.dmg
             dist-electron/**/*.zip
+            dist-electron/**/*.yml
+            dist-electron/**/*.blockmap
 
   build-windows:
     runs-on: windows-latest
@@ -100,4 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shootix-windows
-          path: dist-electron/**/*.exe
+          path: |
+            dist-electron/**/*.exe
+            dist-electron/**/*.yml
+            dist-electron/**/*.blockmap
