@@ -276,19 +276,31 @@ ipcMain.handle('manual-check-updates', async () => {
     try {
         console.log('Starting manual update check...');
         const result = await autoUpdater.checkForUpdates();
-        console.log('Update check result version info:', result?.updateInfo?.version);
+
+        const currentVersion = app.getVersion();
+        const latestVersion = result ? result.updateInfo.version : currentVersion;
+        const updateAvailable = latestVersion !== currentVersion;
+
+        console.log(`Update check complete. Current: ${currentVersion}, Latest: ${latestVersion}, Available: ${updateAvailable}`);
+
         return {
             success: true,
-            version: result ? result.updateInfo.version : app.getVersion(),
-            updateAvailable: result ? result.updateInfo.version !== app.getVersion() : false,
+            version: latestVersion,
+            updateAvailable: updateAvailable,
             releaseNotes: result ? result.updateInfo.releaseNotes : null
         };
     } catch (err) {
         console.error('Manual Update Check Error Detail:', err);
+        // Extract specific error info if available
+        let errorMsg = err.message || 'Erreur inconnue';
+        if (errorMsg.includes('404')) errorMsg = 'Version non trouvée sur GitHub (404)';
+        if (errorMsg.includes('403')) errorMsg = 'Accès refusé par GitHub (403/Forbidden)';
+        if (errorMsg.includes('406')) errorMsg = 'Format de réponse non accepté (406)';
+
         return {
             success: false,
-            error: err.message,
-            stack: err.stack,
+            error: errorMsg,
+            detail: err.toString(),
             url: err.url || 'N/A'
         };
     }
