@@ -83,7 +83,7 @@ const CompanySettings = () => {
                     url: result.url || null
                 });
                 if (result.updateAvailable) {
-                    addToast(`Mise à jour disponible: v${result.version}`, 'info');
+                    addToast(`Mise à jour disponible: v${result.version}`, 'success');
                 } else {
                     addToast('Votre application est à jour.', 'success');
                 }

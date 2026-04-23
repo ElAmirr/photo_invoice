@@ -4,22 +4,37 @@ async function syncFactureStatus(factureId, conn) {
     if (!factureId) return;
     const db = conn || pool;
 
-    const [factures] = await db.query('SELECT total_amount FROM factures WHERE id = ?', [factureId]);
-    if (!factures.length) return;
+    try {
+        const [factures] = await db.query('SELECT id, total_amount, shooting_id FROM factures WHERE id = ?', [factureId]);
+        if (!factures.length) return;
 
-    const totalAmount = parseFloat(factures[0].total_amount || 0);
-    const [payments] = await db.query('SELECT SUM(amount) as total FROM payments WHERE facture_id = ? OR shooting_id = (SELECT shooting_id FROM factures WHERE id = ?)', [factureId, factureId]);
-    const totalPaid = parseFloat(payments[0].total || 0);
+        const f = factures[0];
+        const totalAmount = parseFloat(f.total_amount || 0);
 
-    let status = 'unpaid';
-    // Use epsilon for robust float comparison
-    if (totalPaid >= (totalAmount - 0.001) && totalAmount > 0) {
-        status = 'paid';
-    } else if (totalPaid > 0.001) {
-        status = 'partial';
+        // Simplified query to avoid complex OR/Subquery that might fail on some SQLite builds
+        let query = 'SELECT SUM(amount) as total FROM payments WHERE facture_id = ?';
+        let params = [factureId];
+
+        if (f.shooting_id) {
+            query += ' OR shooting_id = ?';
+            params.push(f.shooting_id);
+        }
+
+        const [payments] = await db.query(query, params);
+        const totalPaid = parseFloat(payments[0].total || 0);
+
+        let status = 'unpaid';
+        if (totalPaid >= (totalAmount - 0.001) && totalAmount > 0) {
+            status = 'paid';
+        } else if (totalPaid > 0.001) {
+            status = 'partial';
+        }
+
+        console.log(`SyncFactureStatus: ID=${factureId}, Paid=${totalPaid}, Total=${totalAmount}, NewStatus=${status}`);
+        await db.query('UPDATE factures SET status = ? WHERE id = ?', [status, factureId]);
+    } catch (err) {
+        console.error('Error in syncFactureStatus:', err);
     }
-
-    await db.query('UPDATE factures SET status = ? WHERE id = ?', [status, factureId]);
 }
 
 async function syncInvoiceStatus(shootingId, conn) {
@@ -86,7 +101,10 @@ exports.create = async (req, res) => {
         if (facture_id) {
             console.log(`Backend: Syncing status for facture ${facture_id}`);
             await syncFactureStatus(facture_id);
-        } else if (shooting_id) {
+        }
+
+        // ALSO sync shooting if provided, don't use "else if"
+        if (shooting_id) {
             console.log(`Backend: Syncing status for shooting ${shooting_id}`);
             await syncInvoiceStatus(shooting_id);
         }

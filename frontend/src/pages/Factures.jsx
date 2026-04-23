@@ -147,12 +147,20 @@ const Factures = () => {
 
     const handleAddPayment = async (e) => {
         e.preventDefault();
+        console.log('Factures: handleAddPayment triggered', { detailData: detailModal.data, paymentForm });
+
         if (detailModal.data?.status === 'paid') return;
         if (!detailModal.data?.id) {
+            console.error('Factures: detailModal.data.id is missing');
             return addToast('Impossible d\'ajouter un paiement: facture non valide.', 'error');
         }
+
         try {
             const rawAmount = Number(paymentForm.amount);
+            if (isNaN(rawAmount) || rawAmount <= 0) {
+                return addToast('Veuillez saisir un montant valide.', 'error');
+            }
+
             const roundedAmount = Math.round(rawAmount * 1000) / 1000;
 
             const payload = {
@@ -164,8 +172,9 @@ const Factures = () => {
                 note: paymentForm.note
             };
 
-            console.log('Factures: Adding manual payment:', payload);
-            await api.post('/payments', payload);
+            console.log('Factures: Sending manual payment payload:', payload);
+            const res = await api.post('/payments', payload);
+            console.log('Factures: Add payment response:', res.data);
 
             const refreshed = await api.get(`/factures/${detailModal.data.id}`);
             const payments = await loadPaymentsForFacture(refreshed.data.id, refreshed.data.shooting_id);
@@ -174,18 +183,31 @@ const Factures = () => {
             fetchData();
             addToast('Paiement ajouté avec succès !', 'success');
         } catch (err) {
-            console.error('Add Payment Error Detail:', err);
+            console.error('Factures: Add Payment Error:', err);
             const errorMsg = err.response?.data?.error || err.message;
             addToast('Erreur lors de l\'ajout du paiement : ' + errorMsg, 'error');
         }
     };
 
     const handleQuickPay = async (facture) => {
-        const remainingRaw = Number(facture.total_amount || 0) - Number(facture.total_paid || 0);
+        console.log('Factures: handleQuickPay triggered for', facture.reference, { total_amount: facture.total_amount, total_paid: facture.total_paid });
+
+        const totalAmount = Number(facture.total_amount || 0);
+        const totalPaid = Number(facture.total_paid || 0);
+        const remainingRaw = totalAmount - totalPaid;
+
+        if (isNaN(remainingRaw)) {
+            console.error('Factures: Invalid total_amount or total_paid', { totalAmount, totalPaid });
+            return addToast('Erreur de calcul du montant restant.', 'error');
+        }
+
         // Round to 3 decimal places to avoid floating point issues
         const remaining = Math.round(remainingRaw * 1000) / 1000;
 
-        if (remaining <= 0) return;
+        if (remaining <= 0) {
+            console.warn('Factures: No remaining amount to pay', { remaining });
+            return;
+        }
 
         const ok = await confirm(`Marquer la facture ${facture.reference} comme payée (${remaining.toFixed(3)} TND) ?`);
         if (ok) {
@@ -198,13 +220,13 @@ const Factures = () => {
                     method: 'virement',
                     note: 'Paiement rapide (un clic)'
                 };
-                console.log('Sending Quick Pay payload:', payload);
+                console.log('Factures: Sending Quick Pay payload:', payload);
                 const res = await api.post('/payments', payload);
-                console.log('Quick Pay response:', res.data);
+                console.log('Factures: Quick Pay response:', res.data);
                 fetchData();
                 addToast('Facture marquée comme payée !', 'success');
             } catch (err) {
-                console.error('Quick Pay Error Detail:', err);
+                console.error('Factures: Quick Pay Error:', err);
                 const errorMsg = err.response?.data?.error || err.message;
                 addToast(`Erreur lors du paiement rapide : ${errorMsg}`, 'error');
             }
