@@ -37,6 +37,12 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
 
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
 const Shootings = () => {
     const { addToast } = useToast();
     const { confirm } = useConfirm();
@@ -84,7 +90,7 @@ const Shootings = () => {
         if (data) {
             setForm({
                 ...data,
-                shooting_date: data.shooting_date ? format(new Date(data.shooting_date), 'yyyy-MM-dd') : ''
+                shooting_date: data.shooting_date ? format(parseLocalDate(data.shooting_date), 'yyyy-MM-dd') : ''
             });
         } else {
             setForm({ client_id: '', title: '', shooting_date: prefilledDate || '', location: '', total_price: 0, status: 'scheduled', start_time: '', duration: '' });
@@ -211,7 +217,7 @@ const Shootings = () => {
                     <div key={day} className="calendar-header-cell">{day}</div>
                 ))}
                 {calendarDays.map(day => {
-                    const dayShootings = shootings.filter(s => isSameDay(new Date(s.shooting_date), day));
+                    const dayShootings = shootings.filter(s => isSameDay(parseLocalDate(s.shooting_date), day));
                     return (
                         <div
                             key={day.toString()}
@@ -340,7 +346,7 @@ const Shootings = () => {
                                     </td>
                                     <td>{s.client_name}</td>
                                     <td>
-                                        <div style={{ fontSize: '13px' }}>{s.shooting_date ? format(new Date(s.shooting_date), 'dd/MM/yy') : '-'}</div>
+                                        <div style={{ fontSize: '13px' }}>{s.shooting_date ? format(parseLocalDate(s.shooting_date), 'dd/MM/yy') : '-'}</div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.location}</div>
                                     </td>
                                     <td>
@@ -400,7 +406,7 @@ const Shootings = () => {
                         <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du Shooting</label>
                             <DatePicker
-                                selected={form.shooting_date ? new Date(form.shooting_date) : null}
+                                selected={form.shooting_date ? parseLocalDate(form.shooting_date) : null}
                                 onChange={(date) => setForm({ ...form, shooting_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 dateFormat="dd/MM/yy"
                                 className="input"
@@ -498,7 +504,7 @@ const Shootings = () => {
                                         <tbody>
                                             {detailModal.data.payments.map(p => (
                                                 <tr key={p.id}>
-                                                    <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yy') : '-'}</td>
+                                                    <td>{p.payment_date ? format(parseLocalDate(p.payment_date), 'dd/MM/yy') : '-'}</td>
                                                     <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                                     <td>{p.method}</td>
                                                     <td style={{ textAlign: 'center' }}>
@@ -535,7 +541,7 @@ const Shootings = () => {
                                     <div style={{ flex: 1 }}>
                                         <label style={{ fontSize: '11px', fontWeight: '600' }}>Date</label>
                                         <DatePicker
-                                            selected={paymentForm.payment_date ? new Date(paymentForm.payment_date) : null}
+                                            selected={paymentForm.payment_date ? parseLocalDate(paymentForm.payment_date) : null}
                                             onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                             dateFormat="dd/MM/yy"
                                             className="input"

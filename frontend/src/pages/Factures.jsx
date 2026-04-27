@@ -20,6 +20,12 @@ import {
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
+
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -97,7 +103,7 @@ const Factures = () => {
             const res = await api.get(`/factures/${data.id}`);
             setForm({
                 client_id: res.data.client_id,
-                date: format(new Date(res.data.date), 'yyyy-MM-dd'),
+                date: format(parseLocalDate(res.data.date), 'yyyy-MM-dd'),
                 status: res.data.status,
                 shooting_id: res.data.shooting_id || '',
                 bon_commande: res.data.bon_commande || '',
