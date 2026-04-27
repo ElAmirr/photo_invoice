@@ -122,18 +122,14 @@ function createWindow() {
     });
 }
 function checkUpdates() {
-    // Add logging for diagnostics
-    autoUpdater.logger = console;
-    autoUpdater.logger.info('App checking for updates...');
-
     autoUpdater.checkForUpdatesAndNotify();
 
-    autoUpdater.on('error', (err) => {
-        console.error('AutoUpdater Error:', err);
-    });
+    // Check for updates every 15 minutes
+    setInterval(() => {
+        autoUpdater.checkForUpdatesAndNotify();
+    }, 15 * 60 * 1000);
 
     autoUpdater.on('update-available', () => {
-        console.log('Update available!');
         dialog.showMessageBox({
             type: 'info',
             title: 'Update Available',
@@ -142,7 +138,6 @@ function checkUpdates() {
     });
 
     autoUpdater.on('update-downloaded', () => {
-        console.log('Update downloaded and ready to install.');
         dialog.showMessageBox({
             type: 'question',
             buttons: ['Restart', 'Later'],
@@ -270,58 +265,6 @@ ipcMain.handle('get-app-info', () => {
         version: app.getVersion(),
         os: `${process.platform} ${os.release()}`
     };
-});
-
-ipcMain.handle('manual-check-updates', async () => {
-    try {
-        console.log('Starting manual update check...');
-        const result = await autoUpdater.checkForUpdates();
-
-        const currentVersion = app.getVersion();
-        const latestVersion = result ? result.updateInfo.version : currentVersion;
-        const updateAvailable = latestVersion !== currentVersion;
-
-        console.log(`Update check complete. Current: ${currentVersion}, Latest: ${latestVersion}, Available: ${updateAvailable}`);
-
-        return {
-            success: true,
-            version: latestVersion,
-            updateAvailable: updateAvailable,
-            releaseNotes: result ? result.updateInfo.releaseNotes : null
-        };
-    } catch (err) {
-        console.error('Manual Update Check Error Detail:', err);
-        // Extract specific error info if available
-        let errorMsg = err.message || 'Erreur inconnue';
-        if (errorMsg.includes('404')) errorMsg = 'Version non trouvée sur GitHub (404)';
-        if (errorMsg.includes('403')) errorMsg = 'Accès refusé par GitHub (403/Forbidden)';
-        if (errorMsg.includes('406')) errorMsg = 'Format de réponse non accepté (406)';
-
-        return {
-            success: false,
-            error: errorMsg,
-            detail: err.toString(),
-            url: err.url || 'N/A'
-        };
-    }
-});
-
-ipcMain.handle('quit-and-install', () => {
-    autoUpdater.quitAndInstall();
-    return true;
-});
-
-// Send progress to windows
-autoUpdater.on('download-progress', (progressObj) => {
-    if (mainWindow) {
-        mainWindow.webContents.send('update-progress', progressObj.percent);
-    }
-});
-
-autoUpdater.on('update-downloaded', () => {
-    if (mainWindow) {
-        mainWindow.webContents.send('update-ready');
-    }
 });
 
 ipcMain.handle('start-trial', async () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Save, Upload, Building2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Save, Upload, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '../components/Toast';
 
@@ -19,15 +19,6 @@ const CompanySettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [licenseInfo, setLicenseInfo] = useState(null);
-    const [appInfo, setAppInfo] = useState({ version: '...', os: '...' });
-    const [updateStatus, setUpdateStatus] = useState({
-        checking: false,
-        available: null,
-        latestVersion: null,
-        releaseNotes: null,
-        progress: 0,
-        ready: false
-    });
 
     useEffect(() => {
         // Fetch company info
@@ -43,21 +34,10 @@ const CompanySettings = () => {
 
         // Fetch license info from Electron, then re-fetch after heartbeat completes
         if (window.electron) {
-            window.electron.getAppInfo().then(setAppInfo);
             window.electron.checkLicense().then(info => {
                 setLicenseInfo(info);
             });
-
-            // Listen for update events
-            window.electron.onUpdateProgress((percent) => {
-                setUpdateStatus(prev => ({ ...prev, progress: Math.round(percent), available: true }));
-            });
-            window.electron.onUpdateReady(() => {
-                setUpdateStatus(prev => ({ ...prev, progress: 100, ready: true }));
-                addToast('Mise à jour prête à être installée !', 'success');
-            });
-
-            // Re-fetch after 5s
+            // Re-fetch after 5s to pick up expiresAt written by the background heartbeat
             setTimeout(() => {
                 window.electron.checkLicense().then(info => {
                     setLicenseInfo(info);
@@ -65,37 +45,6 @@ const CompanySettings = () => {
             }, 5000);
         }
     }, []);
-
-    const handleCheckUpdate = async () => {
-        if (!window.electron) return;
-        setUpdateStatus(prev => ({ ...prev, checking: true }));
-        try {
-            const result = await window.electron.manualCheckUpdates();
-            if (result.success) {
-                setUpdateStatus({
-                    checking: false,
-                    available: result.updateAvailable,
-                    latestVersion: result.version,
-                    releaseNotes: result.releaseNotes,
-                    progress: 0,
-                    ready: false,
-                    error: result.success ? null : result.error,
-                    url: result.url || null
-                });
-                if (result.updateAvailable) {
-                    addToast(`Mise à jour disponible: v${result.version}`, 'success');
-                } else {
-                    addToast('Votre application est à jour.', 'success');
-                }
-            } else {
-                setUpdateStatus(prev => ({ ...prev, checking: false }));
-                addToast(`Erreur de mise à jour: ${result.error}`, 'error');
-            }
-        } catch (err) {
-            setUpdateStatus(prev => ({ ...prev, checking: false }));
-            addToast('Erreur lors de la vérification', 'error');
-        }
-    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -261,54 +210,6 @@ const CompanySettings = () => {
                             <span style={{ fontSize: '11px', color: '#64748b' }}>{licenseInfo?.hwid || 'Chargement...'}</span>
                         </div>
                     </div>
-
-                    <div style={{ marginTop: '20px', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>Version de l'application</span>
-                                <span style={{ padding: '2px 8px', backgroundColor: '#e2e8f0', borderRadius: '10px', fontSize: '11px', fontWeight: '600', color: '#475569' }}>v{appInfo.version}</span>
-                            </div>
-                            <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-                                {updateStatus.available === true
-                                    ? `Nouvelle version disponible : v${updateStatus.latestVersion}`
-                                    : updateStatus.available === false
-                                        ? 'Votre application est à jour'
-                                        : 'Vérifiez si une nouvelle version est disponible'}
-                            </p>
-                            {updateStatus.releaseNotes && (
-                                <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#f1f5f9', borderRadius: '6px', borderLeft: '3px solid #A855F7' }}>
-                                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Nouveautés :</span>
-                                    <div
-                                        style={{ fontSize: '11px', color: '#334155', lineHeight: '1.4' }}
-                                        dangerouslySetInnerHTML={{ __html: typeof updateStatus.releaseNotes === 'string' ? updateStatus.releaseNotes : Array.isArray(updateStatus.releaseNotes) ? updateStatus.releaseNotes.map(n => n.note).join('<br/>') : '' }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={updateStatus.ready ? () => window.electron.quitAndInstall() : handleCheckUpdate}
-                            disabled={updateStatus.checking || (updateStatus.progress > 0 && updateStatus.progress < 100)}
-                            className={`btn ${updateStatus.available === true ? 'btn-primary' : 'btn-outline'}`}
-                            style={{ padding: '8px 16px', fontSize: '12px', height: 'auto', minWidth: '100px' }}
-                        >
-                            <RefreshCw size={14} className={(updateStatus.checking || (updateStatus.progress > 0 && updateStatus.progress < 100)) ? 'spin' : ''} />
-                            {updateStatus.checking
-                                ? 'Vérification...'
-                                : updateStatus.progress > 0 && updateStatus.progress < 100
-                                    ? `${updateStatus.progress}%`
-                                    : updateStatus.ready
-                                        ? 'Installer'
-                                        : updateStatus.available === true
-                                            ? 'Mettre à jour'
-                                            : 'Vérifier'}
-                        </button>
-                    </div>
-                    {updateStatus.progress > 0 && updateStatus.progress < 100 && (
-                        <div style={{ marginTop: '10px', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${updateStatus.progress}%`, backgroundColor: '#A855F7', transition: 'width 0.3s ease' }}></div>
-                        </div>
-                    )}
                 </div>
 
                 <div style={{ gridColumn: 'span 2', marginTop: '20px' }}>
