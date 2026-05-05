@@ -221,6 +221,37 @@ function initDb(dbPath) {
         console.log('DB migration: added tva_suspended columns to devis and factures');
     }
 
+    // 9. Payments: ensure shooting_id is nullable (old DBs may have NOT NULL)
+    //    SQLite can't DROP NOT NULL directly — recreate the table if needed
+    try {
+        const paymentsSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'").get();
+        if (paymentsSchema && paymentsSchema.sql && /shooting_id\s+INTEGER\s+NOT\s+NULL/i.test(paymentsSchema.sql)) {
+            console.log('DB migration: fixing payments.shooting_id NOT NULL constraint...');
+            db.exec(`
+                PRAGMA foreign_keys = OFF;
+                CREATE TABLE payments_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    shooting_id INTEGER,
+                    facture_id INTEGER,
+                    amount DECIMAL(10,2) NOT NULL,
+                    payment_date TEXT NOT NULL,
+                    method TEXT,
+                    note TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (shooting_id) REFERENCES shootings(id),
+                    FOREIGN KEY (facture_id) REFERENCES factures(id)
+                );
+                INSERT INTO payments_new SELECT id, shooting_id, facture_id, amount, payment_date, method, note, created_at FROM payments;
+                DROP TABLE payments;
+                ALTER TABLE payments_new RENAME TO payments;
+                PRAGMA foreign_keys = ON;
+            `);
+            console.log('DB migration: payments.shooting_id is now nullable.');
+        }
+    } catch (e) {
+        console.error('Migration 9 error (non-fatal):', e.message);
+    }
+
     console.log('Successfully initialized database schema.');
     return db;
 }

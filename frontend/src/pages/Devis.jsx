@@ -22,6 +22,13 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+
 const Devis = () => {
     const { addToast } = useToast();
     const { confirm } = useConfirm();
@@ -87,8 +94,8 @@ const Devis = () => {
             const res = await api.get(`/devis/${data.id}`);
             setForm({
                 client_id: res.data.client_id,
-                date: format(new Date(res.data.date), 'yyyy-MM-dd'),
-                valid_until: format(new Date(res.data.valid_until), 'yyyy-MM-dd'),
+                date: format(parseLocalDate(res.data.date), 'yyyy-MM-dd'),
+                valid_until: format(parseLocalDate(res.data.valid_until), 'yyyy-MM-dd'),
                 status: res.data.status,
                 title: res.data.title || '',
                 bon_commande: res.data.bon_commande || '',
@@ -155,7 +162,7 @@ const Devis = () => {
             isOpen: true,
             devisId: id,
             form: {
-                shooting_date: format(new Date(devisDate), 'yyyy-MM-dd'),
+                shooting_date: format(parseLocalDate(devisDate), 'yyyy-MM-dd'),
                 start_time: '10:00',
                 duration: '2',
                 location: ''
@@ -250,7 +257,7 @@ const Devis = () => {
                             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
                             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '2px 8px', width: '300px' }}>
                                 <DatePicker
-                                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                                    selected={filterStartDate ? parseLocalDate(filterStartDate) : null}
                                     onChange={(date) => setFilterStartDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Début"
@@ -259,7 +266,7 @@ const Devis = () => {
                                 />
                                 <span style={{ color: '#94a3b8', margin: '0 4px', fontSize: '12px', fontWeight: '800' }}>→</span>
                                 <DatePicker
-                                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                                    selected={filterEndDate ? parseLocalDate(filterEndDate) : null}
                                     onChange={(date) => setFilterEndDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Fin"
@@ -324,8 +331,8 @@ const Devis = () => {
                                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{d.title || '(Sans titre)'}</div>
                                 </td>
                                 <td>
-                                    <div style={{ fontSize: '13px' }}>{d.date ? format(new Date(d.date), 'dd/MM/yy') : '-'}</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(new Date(d.valid_until), 'dd/MM/yy') : '-'}</div>
+                                    <div style={{ fontSize: '13px' }}>{d.date ? format(parseLocalDate(d.date), 'dd/MM/yy') : '-'}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Expire le: {d.valid_until ? format(parseLocalDate(d.valid_until), 'dd/MM/yy') : '-'}</div>
                                 </td>
                                 <td style={{ textAlign: 'right', fontWeight: '700' }}>{(d.total_amount || 0).toFixed(3).replace('.', ',')} TND</td>
                                 <td style={{ textAlign: 'center' }}>
@@ -478,7 +485,7 @@ const Devis = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du devis</label>
                             <DatePicker
-                                selected={form.date ? new Date(form.date) : null}
+                                selected={form.date ? parseLocalDate(form.date) : null}
                                 onChange={(date) => setForm({ ...form, date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 dateFormat="dd/MM/yy"
                                 className="input"
@@ -488,7 +495,7 @@ const Devis = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Valable jusqu'au</label>
                             <DatePicker
-                                selected={form.valid_until ? new Date(form.valid_until) : null}
+                                selected={form.valid_until ? parseLocalDate(form.valid_until) : null}
                                 onChange={(date) => setForm({ ...form, valid_until: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 dateFormat="dd/MM/yy"
                                 className="input"
@@ -525,7 +532,7 @@ const Devis = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '600' }}>Date du shooting</label>
                         <DatePicker
-                            selected={convModal.form.shooting_date ? new Date(convModal.form.shooting_date) : null}
+                            selected={convModal.form.shooting_date ? parseLocalDate(convModal.form.shooting_date) : null}
                             onChange={(date) => setConvModal({ ...convModal, form: { ...convModal.form, shooting_date: date ? format(date, 'yyyy-MM-dd') : '' } })}
                             dateFormat="dd/MM/yy"
                             className="input"

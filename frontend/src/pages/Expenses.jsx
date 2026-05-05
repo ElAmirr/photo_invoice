@@ -17,6 +17,13 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import DatePicker from 'react-datepicker';
 
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+
 const Expenses = () => {
     const { addToast } = useToast();
     const { confirm } = useConfirm();
@@ -207,7 +214,7 @@ const Expenses = () => {
                             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
                             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '2px 8px', width: '300px' }}>
                                 <DatePicker
-                                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                                    selected={filterStartDate ? parseLocalDate(filterStartDate) : null}
                                     onChange={(date) => setFilterStartDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Début"
@@ -216,7 +223,7 @@ const Expenses = () => {
                                 />
                                 <span style={{ color: '#94a3b8', margin: '0 4px', fontSize: '12px', fontWeight: '800' }}>→</span>
                                 <DatePicker
-                                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                                    selected={filterEndDate ? parseLocalDate(filterEndDate) : null}
                                     onChange={(date) => setFilterEndDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Fin"
@@ -250,7 +257,7 @@ const Expenses = () => {
                         <tbody>
                             {filteredExpenses.map(exp => (
                                 <tr key={exp.id}>
-                                    <td style={{ padding: '12px 20px' }}>{format(new Date(exp.date), 'dd/MM/yy')}</td>
+                                    <td style={{ padding: '12px 20px' }}>{format(parseLocalDate(exp.date), 'dd/MM/yy')}</td>
                                     <td style={{ padding: '12px 20px' }}>
                                         <span
                                             title={exp.description || 'Pas de description'}
@@ -359,7 +366,7 @@ const Expenses = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date</label>
                             <DatePicker
-                                selected={formData.date ? new Date(formData.date) : null}
+                                selected={formData.date ? parseLocalDate(formData.date) : null}
                                 onChange={(date) => setFormData({ ...formData, date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 dateFormat="dd/MM/yy"
                                 className="input"

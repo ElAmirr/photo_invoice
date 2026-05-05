@@ -20,6 +20,12 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
 const BigStat = ({ title, value, icon, color, subValue, gradient }) => (
     <div
         className="card"
@@ -350,7 +356,7 @@ const Dashboard = () => {
                                     key={p.id}
                                     title={p.client_name}
                                     subTitle={p.reference}
-                                    date={`Due le ${format(new Date(p.date), 'dd/MM/yy')}`}
+                                    date={`Due le ${format(parseLocalDate(p.date), 'dd/MM/yy')}`}
                                     amount={formatAmount(p.total_amount)}
                                     status={p.status}
                                     color="#6366f1"

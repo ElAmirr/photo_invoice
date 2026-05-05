@@ -20,14 +20,14 @@ import {
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { fr } from 'date-fns/locale';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const parseLocalDate = (str) => {
     if (!str) return null;
     const [y, m, d] = str.split('-').map(Number);
     return new Date(y, m - 1, d);
 };
-import { useToast } from '../components/Toast';
-import { useConfirm } from '../components/ConfirmDialog';
 
 const Factures = () => {
     const { addToast } = useToast();
@@ -324,7 +324,7 @@ const Factures = () => {
                             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Période</span>
                             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '2px 8px', width: '300px' }}>
                                 <DatePicker
-                                    selected={filterStartDate ? new Date(filterStartDate) : null}
+                                    selected={filterStartDate ? parseLocalDate(filterStartDate) : null}
                                     onChange={(date) => setFilterStartDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Début"
@@ -333,7 +333,7 @@ const Factures = () => {
                                 />
                                 <span style={{ color: '#94a3b8', margin: '0 4px', fontSize: '12px', fontWeight: '800' }}>→</span>
                                 <DatePicker
-                                    selected={filterEndDate ? new Date(filterEndDate) : null}
+                                    selected={filterEndDate ? parseLocalDate(filterEndDate) : null}
                                     onChange={(date) => setFilterEndDate(date ? format(date, 'yyyy-MM-dd') : '')}
                                     dateFormat="dd/MM/yy"
                                     placeholderText="Fin"
@@ -398,7 +398,7 @@ const Factures = () => {
                                 <tr key={f.id}>
                                     <td style={{ fontWeight: '700', color: 'var(--primary)' }}>{f.reference}</td>
                                     <td>{f.client_name}</td>
-                                    <td>{f.date ? format(new Date(f.date), 'dd/MM/yy') : '-'}</td>
+                                    <td>{f.date ? format(parseLocalDate(f.date), 'dd/MM/yy') : '-'}</td>
                                     <td style={{ textAlign: 'center' }}>
                                         {isPaid ? (
                                             <span className="badge badge-paid" style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>Payée</span>
@@ -547,7 +547,7 @@ const Factures = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontSize: '14px', fontWeight: '600' }}>Date de facturation</label>
                             <DatePicker
-                                selected={form.date ? new Date(form.date) : null}
+                                selected={form.date ? parseLocalDate(form.date) : null}
                                 onChange={(date) => setForm({ ...form, date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 dateFormat="dd/MM/yy"
                                 className="input"
@@ -566,7 +566,7 @@ const Factures = () => {
                                 value={form.shooting_id} onChange={e => setForm({ ...form, shooting_id: e.target.value })}
                             >
                                 <option value="">Aucun shooting</option>
-                                {shootings.map(s => <option key={s.id} value={s.id}>{s.title} ({format(new Date(s.shooting_date), 'dd/MM/yy')})</option>)}
+                                {shootings.map(s => <option key={s.id} value={s.id}>{s.title} ({format(parseLocalDate(s.shooting_date), 'dd/MM/yy')})</option>)}
                             </select>
                         </div>
                     </div>
@@ -609,7 +609,7 @@ const Factures = () => {
                             <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Date & Réf</p>
                                 <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{detailModal.data.reference}</h4>
-                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{format(new Date(detailModal.data.date), 'dd/MM/yy')}</p>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{format(parseLocalDate(detailModal.data.date), 'dd/MM/yy')}</p>
                             </div>
                         </div>
 
@@ -640,7 +640,7 @@ const Factures = () => {
                                 <tbody>
                                     {(detailModal.data.payments || []).map(p => (
                                         <tr key={p.id}>
-                                            <td>{p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yy') : '-'}</td>
+                                            <td>{p.payment_date ? format(parseLocalDate(p.payment_date), 'dd/MM/yy') : '-'}</td>
                                             <td style={{ fontWeight: '600' }}>{Math.round(p.amount || 0)} TND</td>
                                             <td>{p.method}</td>
                                             <td>{p.note || '-'}</td>
@@ -688,7 +688,7 @@ const Factures = () => {
                                 <div style={{ flex: 1 }}>
                                     <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px' }}>Date</label>
                                     <DatePicker
-                                        selected={paymentForm.payment_date ? new Date(paymentForm.payment_date) : null}
+                                        selected={paymentForm.payment_date ? parseLocalDate(paymentForm.payment_date) : null}
                                         onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                                         dateFormat="dd/MM/yy"
                                         className="input"
