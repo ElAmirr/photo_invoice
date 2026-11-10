@@ -33,7 +33,8 @@ const LicenseModal = ({ onAuthenticated }) => {
                     key: key.trim(),
                     hwid: hwid,
                     version: appInfo.version,
-                    os: appInfo.os
+                    os: appInfo.os,
+                    app: 'photo_invoice'
                 },
                 { timeout: 40000 } // 40s timeout for Render cold starts
             );

@@ -43,7 +43,8 @@ function App() {
                             key: status.key,
                             hwid: hwid,
                             version: appInfo.version,
-                            os: appInfo.os
+                            os: appInfo.os,
+                            app: 'photo_invoice'
                         },
                         { timeout: 10000 } // 10s timeout
                     );

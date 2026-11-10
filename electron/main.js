@@ -190,6 +190,7 @@ if (!singleInstanceLock) {
                                 body: JSON.stringify({
                                     key: data.key,
                                     hwid: data.hwid,
+                                    app: 'photo_invoice',
                                     version: app.getVersion(),
                                     os: `${process.platform} ${os.release()}`
                                 })
@@ -275,6 +276,7 @@ ipcMain.handle('start-trial', async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 hwid,
+                app: 'photo_invoice',
                 version: app.getVersion(),
                 os: `${process.platform} ${os.release()}`
             })
